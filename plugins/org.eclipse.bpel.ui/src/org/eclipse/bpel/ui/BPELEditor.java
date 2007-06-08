@@ -108,6 +108,7 @@ import org.eclipse.emf.ecore.resource.Resource;
 import org.eclipse.emf.ecore.resource.ResourceSet;
 import org.eclipse.emf.ecore.resource.impl.ResourceSetImpl;
 import org.eclipse.gef.ContextMenuProvider;
+import org.eclipse.gef.DefaultEditDomain;
 import org.eclipse.gef.EditPart;
 import org.eclipse.gef.EditPartViewer;
 import org.eclipse.gef.GraphicalViewer;
@@ -125,7 +126,6 @@ import org.eclipse.gef.ui.actions.ActionRegistry;
 import org.eclipse.gef.ui.actions.SelectionAction;
 import org.eclipse.gef.ui.actions.ZoomInAction;
 import org.eclipse.gef.ui.actions.ZoomOutAction;
-import org.eclipse.gef.ui.parts.ContentOutlinePage;
 import org.eclipse.gef.ui.parts.TreeViewer;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.IAction;
@@ -155,14 +155,12 @@ import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.actions.ActionFactory;
 import org.eclipse.ui.dialogs.SaveAsDialog;
-import org.eclipse.ui.ide.IGotoMarker;
 import org.eclipse.ui.internal.views.properties.tabbed.view.Tab;
 import org.eclipse.ui.internal.views.properties.tabbed.view.TabDescriptor;
 import org.eclipse.ui.internal.views.properties.tabbed.view.TabbedPropertyViewer;
 import org.eclipse.ui.part.FileEditorInput;
 import org.eclipse.ui.part.IPageSite;
 import org.eclipse.ui.part.PageBook;
-import org.eclipse.ui.views.contentoutline.IContentOutlinePage;
 import org.eclipse.ui.views.properties.IPropertySheetPage;
 import org.eclipse.ui.views.properties.tabbed.ISection;
 import org.eclipse.ui.views.properties.tabbed.ITabbedPropertySheetPageContributor;
@@ -174,7 +172,7 @@ import org.eclipse.wst.wsdl.util.WSDLResourceImpl;
 /**
  * BPELEditor is the Eclipse editor part for editing BPEL files.
  */
-public class BPELEditor extends GraphicalEditorWithPaletteAndTray implements IEditModelListener, IGotoMarker {
+public class BPELEditor extends GraphicalEditorWithPaletteAndTray implements IEditModelListener/*, IGotoMarker */{
 
 	// The process that we are editing
 	private Process process;
@@ -197,8 +195,6 @@ public class BPELEditor extends GraphicalEditorWithPaletteAndTray implements IEd
 
 	// reacts to changes on the BPEL file (e.g. move, rename)
 	private IFileChangeListener fileChangeListener;
-	
-	private OutlinePage outlinePage;
 	
 	// Cached key handler used by both the graphical editor and outline view
 	private KeyHandler keyHandler;	
@@ -233,8 +229,6 @@ public class BPELEditor extends GraphicalEditorWithPaletteAndTray implements IEd
 	protected Set insertNewActions;
 	protected Set changeTypeActions;
 	
-	// The current property sheet page
-	protected BPELTabbedPropertySheetPage currentPropertySheetPage;
 	protected String contributorID;
 	
 	protected ICommandFramework commandFramework;
@@ -270,6 +264,11 @@ public class BPELEditor extends GraphicalEditorWithPaletteAndTray implements IEd
 	    return null;
 	}
 
+	//increasing visibility
+	public DefaultEditDomain getEditDomain() {
+		return super.getEditDomain();
+	}
+	
 	public BPELEditModelClient getEditModelClient() {	return editModelClient; }
 	
 	public ResourceSet getResourceSet() {
@@ -284,125 +283,6 @@ public class BPELEditor extends GraphicalEditorWithPaletteAndTray implements IEd
 	public Set getInsertNewActions() { return insertNewActions; }
 	public Set getChangeTypeActions() { return changeTypeActions; }
 	
-	class OutlinePage extends ContentOutlinePage {
-		private PageBook pageBook;
-		private Control outline;
-		private Canvas overview;
-		private IAction showOutlineAction, showOverviewAction;
-		static final int ID_OUTLINE  = 0;
-		static final int ID_OVERVIEW = 1;
-		private Thumbnail thumbnail;
-
-		public OutlinePage(EditPartViewer viewer) {
-			super(viewer);
-		}
-
-		// increase visibility.
-		public EditPartViewer getViewer() {
-			return super.getViewer();
-		}
-
-		private void configureOutlineViewer() {
-			getViewer().setEditDomain(getEditDomain());
-			getViewer().setEditPartFactory(new OutlineTreePartFactory());
-			registerViewer(getViewer());
-			ContextMenuProvider provider = new ProcessContextMenuProvider(getViewer(), getActionRegistry());
-			getViewer().setContextMenu(provider);
-			getSite().registerContextMenu("org.eclipse.bpel.outline.contextmenu", //$NON-NLS-1$
-				provider, 
-				getSite().getSelectionProvider());
-			getViewer().setKeyHandler(getKeyHandler());
-			// TODO: Drag and drop support goes here
-			// getViewer().addDropTargetListener(new BPELTemplateTransferDropTargetListener(getViewer()));
-			IToolBarManager tbm = getSite().getActionBars().getToolBarManager();
-			showOutlineAction = new Action() {
-				public void run() {
-					showPage(ID_OUTLINE);
-				}
-                
-                public String getToolTipText() {
-                    return Messages.OutlinePage_showOutlineView;
-                }
-			};
-			showOutlineAction.setImageDescriptor(BPELUIPlugin.getPlugin().getImageDescriptor(IBPELUIConstants.ICON_OUTLINE_16)); 
-			tbm.add(showOutlineAction);
-			showOverviewAction = new Action() {
-				public void run() {
-					showPage(ID_OVERVIEW);
-				}
-                
-                public String getToolTipText() {
-                    return Messages.OutlinePage_showOverviewView;
-                }
-			};
-			showOverviewAction.setImageDescriptor(BPELUIPlugin.getPlugin().getImageDescriptor(IBPELUIConstants.ICON_OVERVIEW_16)); 	
-			tbm.add(showOverviewAction);
-			showPage(ID_OUTLINE);
-		}
-
-		public Control getControl() {
-			return pageBook;
-		}
-
-		public void createControl(Composite parent) {
-			pageBook = new PageBook(parent, SWT.NONE);
-			outline = getViewer().createControl(pageBook);
-			overview = new Canvas(pageBook, SWT.NONE);
-			pageBook.showPage(outline);
-			configureOutlineViewer();
-			// TODO: Add to the adapting selection provider
-			//getSelectionSynchronizer().addViewer(getViewer());
-			getViewer().setContents(process);
-		}
-
-		private void initializeOverview() {
-			LightweightSystem lws = new LightweightSystem(overview);
-			RootEditPart rep = getGraphicalViewer().getRootEditPart();
-			if (rep instanceof GraphicalBPELRootEditPart) {
-				GraphicalBPELRootEditPart root = (GraphicalBPELRootEditPart)rep;
-				thumbnail = new ScrollableThumbnail((Viewport)root.getFigure());
-				thumbnail.setSource(root.getLayer(LayerConstants.PRINTABLE_LAYERS));
-				lws.setContents(thumbnail);
-			}
-		}
-
-		private void showPage(int id) {
-			if (id == ID_OUTLINE) {
-				showOutlineAction.setChecked(true);
-				showOverviewAction.setChecked(false);
-				pageBook.showPage(outline);
-				if (thumbnail != null)
-					thumbnail.setVisible(false);
-			} else if (id == ID_OVERVIEW) {
-				initializeOverview();
-				showOutlineAction.setChecked(false);
-				showOverviewAction.setChecked(true);
-				pageBook.showPage(overview);
-				thumbnail.setVisible(true);
-			}
-		}
-
-		public void dispose() {
-			super.dispose();
-		}
-		
-		public void init(IPageSite pageSite) {
-			super.init(pageSite);
-			ActionRegistry registry = getActionRegistry();
-			IActionBars bars = pageSite.getActionBars();
-			String id = ActionFactory.UNDO.getId();
-			bars.setGlobalActionHandler(id, registry.getAction(id));
-			id = ActionFactory.REDO.getId();
-			bars.setGlobalActionHandler(id, registry.getAction(id));
-			id = ActionFactory.DELETE.getId();
-			bars.setGlobalActionHandler(id, registry.getAction(id));
-			id = ActionFactory.REVERT.getId();
-			bars.setGlobalActionHandler(id, registry.getAction(id));
-			bars.updateActionBars();
-		}
-
-	}
-
 	/**
 	 * @see org.eclipse.gef.ui.parts.GraphicalEditor#configureGraphicalViewer()
 	 */
@@ -580,9 +460,7 @@ public class BPELEditor extends GraphicalEditorWithPaletteAndTray implements IEd
 		if (getPaletteViewer() != null) {
 			getPaletteViewer().setContents(null);
 		}
-		if (outlinePage != null && outlinePage.getViewer() != null) {
-			outlinePage.getViewer().setContents(null);
-		}
+		
 		lastSelectedEditPart = null;
 
 		super.dispose();
@@ -627,7 +505,6 @@ public class BPELEditor extends GraphicalEditorWithPaletteAndTray implements IEd
 //		if (extensionMap != null) extensionMap.clear();
 //		extensionMap = null;
 		modelAutoUndoRecorder = null;
-		outlinePage = null;
 
 		if (getSelectionActions() != null) {
 			getSelectionActions().clear();
@@ -830,180 +707,6 @@ public class BPELEditor extends GraphicalEditorWithPaletteAndTray implements IEd
 		createBPELPaletteEntries(paletteRoot);
 		createBottomControlPaletteEntries(paletteRoot);
 		return paletteRoot;
-	}
-	
-	public void gotoMarker(IMarker marker) {
-		
-		// One such mechanism is to use the href of the model object
-		// generated by the validator or whatever ...
-		
-		String href = null;
-		try {
-			href = (String) marker.getAttribute( "address.model" );
-		} catch (CoreException ex) {
-			BPELUIPlugin.log(ex);
-		}		
-		
-		// lookup by object href in the model.
-		EObject modelObject = null;
-		
-		if (href != null) {
-			try {
-				modelObject = getResource().getEObject( href );
-			} catch (Throwable t) {
-				BPELUIPlugin.log(t);
-			}
-		}
-		
-		if (modelObject == null) {
-			return;
-		}
-		
-		gotoMarker ( marker, modelObject );
-	}
-	
-	
-	/**
-	 * Figure out which object needs to be selected for this marker.
-	 * 
-	 * @param marker the marker
-	 * @param modelObject the model object on which the marker is generated.
-	 */
-	
-	void gotoMarker ( IMarker marker, EObject modelObject ) {
-		
-		// TODO: is this bogus now that we have AdaptingSelectionProvider?
-				
-		
-		// The closest parent which has an edit part in the graph view.
-		//
-		// The following do not have viewers in the graph view:
-		//  1) Variables, PartnerLinks, Correlation Sets
-		// If it's any of those, then we have to reveal the closest container
-		// and then select the model object and show the properties.
-
-		GraphicalViewer graphViewer = getGraphicalViewer();
-		EObject refObj = null;
-		
-		EditPart editPart = null;
-		if ( modelObject instanceof Variable ||
-		     modelObject instanceof PartnerLink ||
-		     modelObject instanceof CorrelationSet ) {
-			
-			refObj = ModelHelper.getContainingScope(modelObject);
-			editPart = (EditPart)graphViewer.getEditPartRegistry().get(refObj);
-			if (editPart != null) {
-				graphViewer.reveal(editPart);
-			}			
-			selectModelObject(modelObject);
-			
-		} else if (modelObject instanceof Activity) {
-			
-			// activity objects are on the graphical viewer
-			refObj = modelObject;
-			editPart = (EditPart)graphViewer.getEditPartRegistry().get(refObj);
-			
-			if (editPart != null) {
-				graphViewer.reveal(editPart);
-			}
-			
-			selectModelObject(modelObject);
-			
-			
-		} else {
-				
-			refObj = modelObject;
-			while (refObj != null && !(refObj instanceof Activity) ) {
-				refObj = refObj.eContainer();
-			}
-			
-			// select process by default.
-			if (refObj == null) {
-				refObj = ModelHelper.getProcess( modelObject ) ;
-			}
-			
-			modelObject = refObj;
-			
-			editPart = (EditPart)graphViewer.getEditPartRegistry().get(modelObject);
-			
-			if (editPart != null) {
-				graphViewer.reveal(editPart);
-			}
-			
-			selectModelObject(modelObject);
-		}
-						
-		// If possible, try to display the marker in a property section.
-		BPELTabbedPropertySheetPage propertySheetPage = currentPropertySheetPage;
-		if (propertySheetPage == null) {
-			return;
-			// if currentPropertySheetPage is null it means that the properties
-			// page hasn't shown yet. Since we only want to show it if we have
-			// markers for it we create a new BPELTabbedPropertySheetPage. This
-			// new one should only be used to select which tab and section to show.
-			// TODO: this doesn't work
-			//propertySheetPage = createBPELTabbedPropertySheetPage();
-		}
-		
-		TabbedPropertyViewer viewer = propertySheetPage.getTabbedPropertyViewer();
-		
-		int j = 0;
-		while (true) { // while we don't get an exception...
-			TabDescriptor descriptor = null;
-			try {
-				descriptor = (TabDescriptor)viewer.getElementAt(j++);
-			} catch (IndexOutOfBoundsException iobe) {
-				break;
-			}
-			
-			if (descriptor == null) {
-				break; // no more descriptors
-			}
-			
-			Tab tab = descriptor.createTab();
-			ISection[] sections = tab.getSections();
-			for (int i = 0; i < sections.length; i++) {
-			
-				if (BPELPropertySection.class.isInstance( sections[i]) == false) {
-					continue;
-				}
-				
-				BPELPropertySection section = (BPELPropertySection)sections[i];
-
-				// HACK: we have to fake the initialization of this section in order to
-				// make isValidMarker work. This section should not be used as a normal section.
-				section.createControls(new Composite(getSite().getShell(), 0), propertySheetPage);
-				section.setInput(this, new StructuredSelection(modelObject));
-
-				if (section.isValidMarker (marker) ) {
-					
-					// the first section that handles this kind of marker wins
-					showPropertiesView();
-					// get real viewer, Tab and ISection objects since we are probably using fake ones
-					viewer = currentPropertySheetPage.getTabbedPropertyViewer();
-					viewer.setSelection(new StructuredSelection(descriptor));
-					tab = currentPropertySheetPage.getCurrentTab();
-					section = (BPELPropertySection)tab.getSectionAtIndex(i);
-					section.gotoMarker(marker);
-					return; // ignore other sections and tabs
-					
-				}
-			}					
-		}
-	}
-	
-	
-
-	
-	
-	protected void showPropertiesView() {
-		IWorkbench workbench = PlatformUI.getWorkbench();
-		IWorkbenchPage page = workbench.getActiveWorkbenchWindow().getActivePage();
-		try {
-			page.showView(IBPELUIConstants.PROPERTY_VIEW_ID);
-		} catch (PartInitException e) {
-			BPELUIPlugin.log(e);
-		}
 	}
 	
 	/**
@@ -1211,33 +914,12 @@ public class BPELEditor extends GraphicalEditorWithPaletteAndTray implements IEd
 	 * @see org.eclipse.core.runtime.IAdaptable#getAdapter(Class)
 	 */
 	public Object getAdapter(Class type) {
-		if (type == IContentOutlinePage.class) {
-			if (outlinePage == null) {
-				outlinePage = new OutlinePage(new TreeViewer());
-			}
-			return outlinePage;
-		}
-		if (type == IPropertySheetPage.class) {
-			// We can't cache this object because the properties framework needs a new instance
-			// every time it calls this method. 
-			currentPropertySheetPage = createBPELTabbedPropertySheetPage();
-			return currentPropertySheetPage;
-		}
 //		if (type == ZoomManager.class)
 //			return ((ScalableFreeformRootEditPart) getGraphicalViewer().getRootEditPart())
 //				.getZoomManager();
 		return super.getAdapter(type);
 	}
 	
-	protected BPELTabbedPropertySheetPage createBPELTabbedPropertySheetPage() {
-		return new BPELTabbedPropertySheetPage(new ITabbedPropertySheetPageContributor() {
-		    public String getContributorId() {
-		    	// same as the palette one
-		    	return getPaletteAdditionsContributorId();
-		    }
-        }, this);
-	}
-
 	protected void replaceSelectionAction(ActionRegistry registry, IAction action) {
 		IAction oldAction = registry.getAction(action.getId());
 		if (oldAction != null) {
@@ -1943,7 +1625,8 @@ public class BPELEditor extends GraphicalEditorWithPaletteAndTray implements IEd
 	 * to start using the new mode.
 	 */
 	protected String getPaletteAdditionsContributorId() {
-		if (contributorID == null) {
+		return IBPELUIConstants.BPEL_EDITOR_ID;
+		/*if (contributorID == null) {
 	    	ProcessExtension extension = (ProcessExtension) getExtensionMap().get(getProcess());
 	    	if (extension.isSpecCompliant()) {
 	    		contributorID = IBPELUIConstants.BPEL_SPEC_COMPLIANT_EDITOR_ID;
@@ -1951,6 +1634,6 @@ public class BPELEditor extends GraphicalEditorWithPaletteAndTray implements IEd
 	    		contributorID = getEditorSite().getId();
 	    	}
 		}
-		return contributorID;
+		return contributorID;*/
 	}
 }
