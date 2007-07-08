@@ -151,6 +151,7 @@ import org.eclipse.ui.IEditorSite;
 import org.eclipse.ui.IFileEditorInput;
 import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.IWorkbenchPage;
+import org.eclipse.ui.IWorkbenchPartSite;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.actions.ActionFactory;
@@ -160,6 +161,7 @@ import org.eclipse.ui.internal.views.properties.tabbed.view.TabDescriptor;
 import org.eclipse.ui.internal.views.properties.tabbed.view.TabbedPropertyViewer;
 import org.eclipse.ui.part.FileEditorInput;
 import org.eclipse.ui.part.IPageSite;
+import org.eclipse.ui.part.MultiPageEditorSite;
 import org.eclipse.ui.part.PageBook;
 import org.eclipse.ui.views.properties.IPropertySheetPage;
 import org.eclipse.ui.views.properties.tabbed.ISection;
@@ -172,30 +174,20 @@ import org.eclipse.wst.wsdl.util.WSDLResourceImpl;
 /**
  * BPELEditor is the Eclipse editor part for editing BPEL files.
  */
-public class BPELEditor extends GraphicalEditorWithPaletteAndTray implements IEditModelListener/*, IGotoMarker */{
+public class BPELEditor extends GraphicalEditorWithPaletteAndTray /*, IGotoMarker */{
 
-	// The process that we are editing
-	private Process process;
-
+	//FIXME can't move it to MultiPageEditor because of chicken and egg problem
 	// TODO: comment
 	protected BPELEditModelClient editModelClient;
 
-	protected ModelListenerAdapter modelListenerAdapter; 
-	
 	protected BPELEditorAdapter editorAdapter;
 	
 	// transfer buffer (clipboard) for graph copies
 	private TransferBuffer transferBuffer;
 
-	private Resource extensionsResource;
-	private ExtensionMap extensionMap;
-	
 	// This records all model changes for automatic undo/redo purposes.
 	private ModelAutoUndoRecorder modelAutoUndoRecorder;
 
-	// reacts to changes on the BPEL file (e.g. move, rename)
-	private IFileChangeListener fileChangeListener;
-	
 	// Cached key handler used by both the graphical editor and outline view
 	private KeyHandler keyHandler;	
 	
@@ -217,9 +209,6 @@ public class BPELEditor extends GraphicalEditorWithPaletteAndTray implements IEd
 	// JM
 	private BPELDropTargetListener dropTargetListener;
 
-	// refactoring listeners;
-	protected IResourceChangeListener postBuildRefactoringListener;
-	
 	// Palette entries that will appear and disappear depending on editor mode
 	BPELCreationToolEntry switchEntry, flowEntry, sequenceEntry;
 	PaletteCategory controlCategory;
@@ -233,9 +222,9 @@ public class BPELEditor extends GraphicalEditorWithPaletteAndTray implements IEd
 	
 	protected ICommandFramework commandFramework;
 	
-	public BPELEditor() {
+	public BPELEditor(DefaultEditDomain ed) {
 		super();
-		setEditDomain(new BPELEditDomain(this));
+		setEditDomain(ed);
 
 		transferBuffer = new TransferBuffer();
 
@@ -264,19 +253,21 @@ public class BPELEditor extends GraphicalEditorWithPaletteAndTray implements IEd
 	    return null;
 	}
 
-	//increasing visibility
-	public DefaultEditDomain getEditDomain() {
-		return super.getEditDomain();
+	public BPELEditModelClient getEditModelClient() {	
+		return editModelClient;
 	}
 	
-	public BPELEditModelClient getEditModelClient() {	return editModelClient; }
-	
-	public ResourceSet getResourceSet() {
-		return editModelClient.getEditModel().getResourceSet();
+	public void setEditModelClient(BPELEditModelClient cl) {	
+		this.editModelClient = cl;
 	}
 
-	public Resource getResource() { return process.eResource(); }
+	public ResourceSet getResourceSet() {
+		return getEditModelClient().getEditModel().getResourceSet();
+	}
+
+	public Resource getResource() { return getProcess().eResource(); }
 	public ModelAutoUndoRecorder getModelAutoUndoRecorder() { return modelAutoUndoRecorder; }
+	
 	public TransferBuffer getTransferBuffer() { return transferBuffer; }
 
 	public Set getAppendNewActions() { return appendNewActions; }
@@ -434,11 +425,13 @@ public class BPELEditor extends GraphicalEditorWithPaletteAndTray implements IEd
 	 * @see org.eclipse.ui.IWorkbenchPart#dispose()
 	 */
 	public void dispose() {
+		
 		if (editModelClient != null) {
-			editModelClient.getEditModel().getResourceSet().eAdapters().remove(editorAdapter);
+			editModelClient.getEditModel().getResourceSet().eAdapters().remove(getEditorAdapter());
 			editModelClient.dispose();
 			editModelClient = null;
 		}
+
 		if (getGraphicalViewer() != null) {
 			if (selectionChangeListener != null) {
 				getGraphicalViewer().removeSelectionChangedListener(selectionChangeListener);
@@ -457,6 +450,7 @@ public class BPELEditor extends GraphicalEditorWithPaletteAndTray implements IEd
 		if (getEditDomain() != null) {
 			getEditDomain().setPaletteViewer(null);
 		}
+		
 		if (getPaletteViewer() != null) {
 			getPaletteViewer().setContents(null);
 		}
@@ -465,9 +459,6 @@ public class BPELEditor extends GraphicalEditorWithPaletteAndTray implements IEd
 
 		super.dispose();
 		
-		if (fileChangeListener != null) {
-			BPELUIPlugin.getPlugin().getResourceChangeListener().removeListener(fileChangeListener);
-		}
 		if (dropTarget != null) {
 			dropTarget.dispose();
 			dropTarget = null;
@@ -480,12 +471,6 @@ public class BPELEditor extends GraphicalEditorWithPaletteAndTray implements IEd
 			adaptingSelectionProvider = null;
 		}
 		
-		// remove refactoring listeners
-		if (postBuildRefactoringListener != null) {
-			IWorkspace workspace = ResourcesPlugin.getWorkspace();
-			workspace.removeResourceChangeListener(postBuildRefactoringListener);
-		}
-		
 		// TODO unhook BPELEditorAdapter from the resource set to avoid unnecessary cyclic garbage.
 		//BPELEditorAdapter bpelEditorAdapter = (BPELEditorAdapter)BPELUtil.adapt(
 		//	resourceSet, BPELEditorAdapter.class);
@@ -494,7 +479,7 @@ public class BPELEditor extends GraphicalEditorWithPaletteAndTray implements IEd
 		// Hacks to work around memory leaks: break references to large structures.
 		// Various objects are holding onto a BPELEditor or ResourceSet and that's hard to fix.
 		transferBuffer.setContents(null);
-		process = null;
+
 		if (getEditDomain() != null) {
 			((BPELEditDomain)getEditDomain()).setProcess(null);
 		}
@@ -555,65 +540,6 @@ public class BPELEditor extends GraphicalEditorWithPaletteAndTray implements IEd
 //		}
 //	}
 
-	public void doRevertToSaved(IProgressMonitor monitor) {
-		// Do the work within an operation because this is a long running activity that modifies the workbench.
-//		WorkspaceModifyOperation operation = new WorkspaceModifyOperation() {
-//			protected void execute(IProgressMonitor monitor) throws CoreException {
-//				try {
-//					getCommandFramework().abortCurrentChange();
-//					getCommandStack().flush();
-//					
-//					// de-select anything selected on the canvas!  Otherwise removing things
-//					// will trigger a bunch of behaviour when the selected object(s) are
-//					// removed..
-//					adaptingSelectionProvider.setSelection(StructuredSelection.EMPTY);
-//					
-//					process = null;
-//					extensionMap = null;
-//					extensionsResource = null;
-//					lastSelectedEditPart = null;
-//					// unload all resources (otherwise they stay around taking up space..?)
-//					for (Iterator it = getResourceSet().getResources().iterator(); it.hasNext(); ) {
-//						Resource res = (Resource)it.next();
-//						res.unload();
-//					}
-//					loadModel();
-//					getGraphicalViewer().setContents(process);
-//					getTrayViewer().setContents(process);
-//					if (outlinePage != null && outlinePage.getViewer() != null) {
-//                      // hack!
-//						if (Platform.getWS().equals(Platform.WS_GTK)) {
-//							Tree tree = (Tree) outlinePage.getViewer().getControl();
-//							if (tree != null) {
-//								tree.setRedraw(false);
-//								TreeItem[] items = tree.getItems();
-//								for (int i = 0; i < items.length; i++) {
-//									items[i].dispose();
-//								}
-//								tree.setRedraw(true);
-//							}
-//						}
-//						outlinePage.getViewer().setContents(process);
-//					}
-//					selectModelObject(getProcess());
-//				}
-//				catch (Exception e) {
-//					BPELUIPlugin.log(e);
-//				}
-//			}
-//		};
-//
-//		try {
-//			// This runs the options, and shows progress.
-//			// (It appears to be a bad thing to fork this onto another thread.)
-//			new ProgressMonitorDialog(getSite().getShell()).run(false, false, operation);
-//
-//			// Refresh the necessary state.
-//			firePropertyChange(IEditorPart.PROP_DIRTY);
-//		} catch (Exception e) {
-//			BPELUIPlugin.log(e);
-//		}
-	}
 
 	/**
 	 * @see org.eclipse.ui.IEditorPart#doSave(org.eclipse.core.runtime.IProgressMonitor)
@@ -623,8 +549,8 @@ public class BPELEditor extends GraphicalEditorWithPaletteAndTray implements IEd
 
 		removeUnusedExtensions();
 		// Add all imports and namespaces to the artifacts file before saving.
-		if (editModelClient.getArtifactsResourceInfo() != null) {
-			Resource artifactsResource = editModelClient.getArtifactsResourceInfo().getResource();
+		if (getEditModelClient().getArtifactsResourceInfo() != null) {
+			Resource artifactsResource = getEditModelClient().getArtifactsResourceInfo().getResource();
 			
 			if (artifactsResource instanceof WSDLResourceImpl) {
 				// Add any missing imports/namespaces before saving!
@@ -654,8 +580,8 @@ public class BPELEditor extends GraphicalEditorWithPaletteAndTray implements IEd
 			}
 		}
 		try {
-			extensionsResource.setModified(false);			
-			editModelClient.saveAll(progressMonitor);					
+			getExtensionsResource().setModified(false);			
+			getEditModelClient().saveAll(progressMonitor);					
 			
 			//getModelDirtyTracker().markSaveLocation();
 
@@ -663,12 +589,12 @@ public class BPELEditor extends GraphicalEditorWithPaletteAndTray implements IEd
 			updateTitle();
 		}
 		// Put the timestamp of the bpel file into the bpelex file.
-		IFile bpelFile = BPELUtil.getBPELFile(process);
+		IFile bpelFile = BPELUtil.getBPELFile(getProcess());
 		long modificationStamp = bpelFile.getLocalTimeStamp();
-		ProcessExtension processExtension = (ProcessExtension)ModelHelper.getExtension(process);
+		ProcessExtension processExtension = (ProcessExtension)ModelHelper.getExtension(getProcess());
    		processExtension.setModificationStamp(modificationStamp);
-	    extensionsResource.setModified(true);
-	    editModelClient.saveAll(progressMonitor); 
+   		getExtensionsResource().setModified(true);
+   		getEditModelClient().saveAll(progressMonitor); 
 	}
 
 	// Disable our Save As functionality.
@@ -692,7 +618,7 @@ public class BPELEditor extends GraphicalEditorWithPaletteAndTray implements IEd
 		
 		IPath path = saveAsDialog.getResult();
 		if (path != null) {
-			return editModelClient.savePrimaryResourceAs(
+			return getEditModelClient().savePrimaryResourceAs(
 				ResourcesPlugin.getWorkspace().getRoot().getFile(path), 
 				getEditorSite().getActionBars().getStatusLineManager().getProgressMonitor());	
 		}
@@ -712,25 +638,24 @@ public class BPELEditor extends GraphicalEditorWithPaletteAndTray implements IEd
 	/**
 	 * @see org.eclipse.ui.IEditorPart#isDirty()
 	 */
-	public boolean isDirty() {
+	/*public boolean isDirty() {
 		return getCommandStack().isDirty();
-	}
+	}*/
 
-	public ExtensionMap getExtensionMap() {
-		return extensionMap;
-	}
-	
 	/**
 	 * @see org.eclipse.gef.ui.parts.GraphicalEditor#initializeGraphicalViewer()
 	 */
 	protected void initializeGraphicalViewer() {
-		initializeFileChangeListener();
-		initializeRefactoringListeners();
+		///FIXME moved to multi
+		//initializeFileChangeListener();
+		//initializeRefactoringListeners();
+		
 		getGraphicalViewer().setEditPartFactory(new BPELEditPartFactory());
 		
 		BPELUIPlugin.getPlugin().getPreferenceStore().setValue(IBPELUIConstants.PREF_SHOW_FREEFORM_FLOW, true);
 		
-		getGraphicalViewer().setContents(process);
+		getGraphicalViewer().setContents(getProcess());
+
 		this.selectionChangeListener = new ISelectionChangedListener() {
 			public void selectionChanged(SelectionChangedEvent event) {
 				StructuredSelection selection = (StructuredSelection)event.getSelection();
@@ -782,7 +707,7 @@ public class BPELEditor extends GraphicalEditorWithPaletteAndTray implements IEd
 		// Make a list of all FlowEditParts whose children all have no positional metadata
 		List flowsToArrange = new ArrayList();
 
-		for (TreeIterator it = process.eAllContents(); it.hasNext(); ) {
+		for (TreeIterator it = getProcess().eAllContents(); it.hasNext(); ) {
 			Object model = it.next();
 			if (model instanceof Flow) {
 				boolean missingLoc = false;
@@ -808,60 +733,6 @@ public class BPELEditor extends GraphicalEditorWithPaletteAndTray implements IEd
 		}
 	}
 	
-	protected void initializeFileChangeListener() {
-		fileChangeListener = new IFileChangeListener() {
-			public void deleted(IFile file) {
-				IFile current = ((IFileEditorInput)getEditorInput()).getFile();
-				if (current.equals(file)) {
-					// Close the editor.
-					Display display = getSite().getShell().getDisplay();
-					display.asyncExec(new Runnable() {
-						public void run() {
-							getSite().getPage().closeEditor(BPELEditor.this, false);
-						}
-					});
-				}
-			}
-			public void moved(IFile source, final IFile destination) {
-//				IFile current = ((IFileEditorInput) getEditorInput()).getFile();
-//				if (!current.equals(source)) {
-//					return;
-//				}
-//				// update editors input
-//				final IFileEditorInput input = new FileEditorInput(destination);
-//				Display display = getDetailsEditor().getSite().getShell().getDisplay();
-//				display.syncExec(new Runnable() {
-//					public void run() {
-//						getBPELDetailsEditor().setInput(input);
-//						setInput(input);
-//					}
-//				});
-//				// update resources
-//				IPath path = destination.getFullPath();
-//				URI uri = URI.createPlatformResourceURI(path.toString());
-//				processResource.setURI(uri);
-//				// JM: Comment out. We don't want to re-name the process just because
-//				// the file name has changed
-////				display.syncExec(new Runnable() {
-////					public void run() {
-////						BPELUtil.updateNameAndNamespace(destination, process);
-////					}
-////				});
-//				path = path.removeFileExtension().addFileExtension(IBPELUIConstants.EXTENSION_MODEL_EXTENSIONS);
-//				URI extensionsUri = URI.createPlatformResourceURI(path.toString());
-//				extensionsResource = resourceSet.createResource(extensionsUri);
-//				extensionsResource.setURI(extensionsUri);
-//				try {
-//					// JM: Comment out for now. We should re-test this
-////					processResource.save(Collections.EMPTY_MAP);
-////					destination.refreshLocal(IResource.DEPTH_ZERO, null);
-//				} catch (Exception e) {
-//					BPELUIPlugin.log(e);
-//				}
-			}
-		};
-		BPELUIPlugin.getPlugin().getResourceChangeListener().addListener(fileChangeListener);
-	}
 
 	public void commandStackChanged(EventObject event) {
 		firePropertyChange(IEditorPart.PROP_DIRTY);
@@ -1109,18 +980,48 @@ public class BPELEditor extends GraphicalEditorWithPaletteAndTray implements IEd
 	}
 	
 	public Process getProcess() {
-		return process;
+		IWorkbenchPartSite editorSite = getSite();
+		if (editorSite instanceof MultiPageEditorSite) {
+			return (Process)((org.eclipse.ui.part.MultiPageEditorSite)getSite()).getMultiPageEditor().getAdapter(Process.class);
+		}
+		return null;
+	}
+
+	public Resource getExtensionsResource (){
+		IWorkbenchPartSite editorSite = getSite();
+		if (editorSite instanceof MultiPageEditorSite) {
+			return (Resource)((org.eclipse.ui.part.MultiPageEditorSite)getSite()).getMultiPageEditor().getAdapter(Resource.class);
+		}
+		return null;
+	}
+
+	public ExtensionMap getExtensionMap (){
+		IWorkbenchPartSite editorSite = getSite();
+		if (editorSite instanceof MultiPageEditorSite) {
+			return (ExtensionMap)((org.eclipse.ui.part.MultiPageEditorSite)getSite()).getMultiPageEditor().getAdapter(ExtensionMap.class);
+		}
+		return null;
+	}
+
+	//FIXME should we kill it and move all the model listener adapter related
+	//things to BPELMultipageEditorPart?
+	public ModelListenerAdapter getModelListenerAdapter() { 
+		IWorkbenchPartSite editorSite = getSite();
+		if (editorSite instanceof MultiPageEditorSite) {
+			return (ModelListenerAdapter)((org.eclipse.ui.part.MultiPageEditorSite)getSite()).getMultiPageEditor().getAdapter(ModelListenerAdapter.class);
+		}
+		return null;
 	}
 	
 	/**
-	 * Increase the visibility of getCommandStack() so that the details area
-	 * can see it.
-	 * 
-	 * NOTE: This code is equivalent to GraphicalEditor.getCommandStack().
-	 * We explicitly use getEditDomain() to ensure consistency with replaceCommandStack().
+	 * Overriding to use BPELMultipageEditorPart command stack
 	 */
 	public CommandStack getCommandStack() {
-		return getEditDomain().getCommandStack();
+		IWorkbenchPartSite editorSite = getSite();
+		if (editorSite instanceof MultiPageEditorSite) {
+			return (CommandStack)((org.eclipse.ui.part.MultiPageEditorSite)getSite()).getMultiPageEditor().getAdapter(CommandStack.class);
+		}
+		return null;
 	}
 
 	public void setAutoFlowLayout(boolean autoLayout) {
@@ -1249,6 +1150,10 @@ public class BPELEditor extends GraphicalEditorWithPaletteAndTray implements IEd
 		return filteredEditPartSelectionProvider;
 	}
 
+	protected BPELEditorAdapter getEditorAdapter() {
+		return editorAdapter;
+	}
+
 	/**
 	 * Override getGraphicalViewer() to make the method public
 	 */
@@ -1282,28 +1187,6 @@ public class BPELEditor extends GraphicalEditorWithPaletteAndTray implements IEd
 		});
 	}
 	
-	/**
-	 * Installs the refactoring listeners.
-	 */
-	protected void initializeRefactoringListeners() {
-		final IWorkspace workspace = ResourcesPlugin.getWorkspace();
-		postBuildRefactoringListener = new IResourceChangeListener() {
-			public void resourceChanged(IResourceChangeEvent event) {
-				IFile newFile = ((FileEditorInput)getEditorInput()).getFile();
-				final IResourceDelta bpelFileDelta = event.getDelta().findMember(newFile.getFullPath());
-				// we only care about the change if it is a move or a rename
-				if (bpelFileDelta != null && (bpelFileDelta.getFlags() & IResourceDelta.MOVED_FROM) != 0) {
-					getSite().getShell().getDisplay().syncExec(new Runnable() {
-						public void run() {
-							doRevertToSaved(null);
-						}
-					});
-				}
-			}
-		};
-		workspace.addResourceChangeListener(postBuildRefactoringListener, IResourceChangeEvent.POST_BUILD);
-	}
-
 	public void createPartControl(Composite parent) {
 		super.createPartControl(parent);
 		getTrayComposite().setState(TrayComposite.STATE_EXPANDED);
@@ -1320,6 +1203,7 @@ public class BPELEditor extends GraphicalEditorWithPaletteAndTray implements IEd
 	 * This is called during startup.
 	 */
 	public void init(IEditorSite site, IEditorInput editorInput) throws PartInitException {
+		
 		if (editorInput instanceof IFileEditorInput) {
 			try {
 				super.init(site, editorInput);
@@ -1327,22 +1211,15 @@ public class BPELEditor extends GraphicalEditorWithPaletteAndTray implements IEd
 				// remove the listener on the command stack created by the graphical editor
 				getCommandStack().removeCommandStackListener(this);
 
-				editModelClient = new BPELEditModelClient(this, getFileInput(), this, null);
-				getEditDomain().setCommandStack(editModelClient.getCommandStack());
-				
-				ResourceSet resourceSet = editModelClient.getEditModel().getResourceSet();
+				ResourceSet resourceSet = getEditModelClient().getEditModel().getResourceSet();
 
 				// TODO: does this stuff have to go?  it won't work with shared models..
-				modelListenerAdapter = new ModelListenerAdapter();
-				resourceSet.eAdapters().add(modelListenerAdapter);
+				resourceSet.eAdapters().add(getModelListenerAdapter());
 				resourceSet.eAdapters().add(editorAdapter = new BPELEditorAdapter());
-				this.modelListenerAdapter.setLinkNotificationAdapter(new LinkNotificationAdapter(this));
-				getCommandStack().addCommandStackListener(modelListenerAdapter);
+				getModelListenerAdapter().setLinkNotificationAdapter(new LinkNotificationAdapter(this));
+				getCommandStack().addCommandStackListener(getModelListenerAdapter());
 				
-				loadModel();
-				updateTitle();
-
-				commandFramework = new EditModelCommandFramework(editModelClient.getCommandStack());
+				commandFramework = new EditModelCommandFramework(getEditModelClient().getCommandStack());
 
 				// add a listener to the shared command stack
 				getCommandStack().addCommandStackListener(this);
@@ -1380,12 +1257,12 @@ public class BPELEditor extends GraphicalEditorWithPaletteAndTray implements IEd
 	// This is for loading the model within the editor
 	// REMINDER: Any changes to this method, consider corresponding changes to
 	// the loadModelWithoutEditModel() method!
-	protected void loadModel() {
+	/*protected void loadModel() {
 		// TODO: This two lines are a workaround for https://bugs.eclipse.org/bugs/show_bug.cgi?id=72565
 		EcorePackage instance = EcorePackage.eINSTANCE;
-		instance.eAdapters();
+		instance.eAdapters();*/
 
-		Resource bpelResource = editModelClient.getPrimaryResourceInfo().getResource();
+		/*Resource bpelResource = editModelClient.getPrimaryResourceInfo().getResource();
 
 		IFile file = getFileInput();
 		BPELReader reader = new BPELReader();
@@ -1398,7 +1275,7 @@ public class BPELEditor extends GraphicalEditorWithPaletteAndTray implements IEd
 	    this.extensionsResource = reader.getExtensionsResource();
 	    this.extensionMap = reader.getExtensionMap();
 	    
-		this.modelListenerAdapter.setExtensionMap(extensionMap);
+		this.modelListenerAdapter.setExtensionMap(extensionMap);*/
 
 //		ProcessExtension processExtension = (ProcessExtension)ModelHelper.getExtension(process);
 //		long stamp = processExtension.getModificationStamp();
@@ -1420,59 +1297,7 @@ public class BPELEditor extends GraphicalEditorWithPaletteAndTray implements IEd
 //  		        //extensionMap = null;
 //   		    }
 //   		}
-	}
-	
-	// This is a hack for the report generator.
-	// REMINDER: Any changes to this method, consider corresponding changes to
-	// the loadModel() method!
-	public void loadModelWithoutEditModel() {
-		// TODO: This two lines are a workaround for https://bugs.eclipse.org/bugs/show_bug.cgi?id=72565
-		EcorePackage instance = EcorePackage.eINSTANCE;
-		instance.eAdapters();
-
-		ResourceSet resourceSet = new ResourceSetImpl();
-		IFile file = getFileInput();
-		URI uri = URI.createPlatformResourceURI(file.getFullPath().toString());
-		Resource bpelResource = resourceSet.getResource(uri, true);
-
-		BPELReader reader = new BPELReader();
-	    reader.read(bpelResource, file, resourceSet);
-	    
-	    this.process = reader.getProcess();
-	    if (getEditDomain() != null) {
-	    	((BPELEditDomain)getEditDomain()).setProcess(process);
-	    }
-	    this.extensionsResource = reader.getExtensionsResource();
-	    this.extensionMap = reader.getExtensionMap();
-	    
-		modelListenerAdapter = new ModelListenerAdapter();
-		resourceSet.eAdapters().add(modelListenerAdapter);
-		resourceSet.eAdapters().add(new BPELEditorAdapter());
-	    
-		this.modelListenerAdapter.setExtensionMap(extensionMap);
-
-//		ProcessExtension processExtension = (ProcessExtension)ModelHelper.getExtension(process);
-//		long stamp = processExtension.getModificationStamp();
-//   		// Be nice if the file is old or doesn't yet have a stamp.
-//   		if (stamp != 0) {
-//   		    long actualStamp = file.getLocalTimeStamp();
-//   		    if (stamp != actualStamp) {
-//   		        // Inform the user that visual information will be discarded,
-//   		        // and null out the extension map. 
-//   		        // Only inform the user if we actually have a shell; headless clients
-//   		        // will not be informed.
-//   		        if (getSite() != null) {
-//   		            MessageDialog.openWarning(getSite().getShell(), "Process Out Of Sync", "The Process has been modified outside the editor and does not match the layout information stored for it.");
-//   		        }
-//   		        // TODO: Null out and recreate the extension map. Perhaps we need
-//   		        // to preserve some interesting bits of info about spec compliance
-//   		        // and implicit sequences. Don't null it out yet until we understand
-//   		        // all the cases in which this could occur.
-//  		        //extensionMap = null;
-//   		    }
-//   		}
-	    
-	}
+	/*}*/
 	
 	public ICommandFramework getCommandFramework() { return commandFramework; }
 
@@ -1489,7 +1314,7 @@ public class BPELEditor extends GraphicalEditorWithPaletteAndTray implements IEd
 		getTrayViewer().setContextMenu(provider);
 		getSite().registerContextMenu("org.eclipse.bpel.editor.tray.contextmenu", //$NON-NLS-1$
 			provider, getSite().getSelectionProvider());
-		getTrayViewer().setContents(process);
+		getTrayViewer().setContents(getProcess());
 
 		// Setup the drop target and add our listener to it.
 		// This will allow us to accept drops from the navigator.
@@ -1517,49 +1342,14 @@ public class BPELEditor extends GraphicalEditorWithPaletteAndTray implements IEd
 		getMultiViewerSelectionProvider().addViewer(viewer);		
 	}
 	
-
-	public void modelDeleted(ResourceInfo resourceInfo) {
-		if (!isDirty()) {
-			getSite().getPage().closeEditor(this, false);
-		}
-	}
-	
-	public void modelDirtyStateChanged(ResourceInfo resourceInfo) {
-		firePropertyChange(PROP_DIRTY);
-	}
-	
-	public void modelLocationChanged(ResourceInfo resourceInfo, IFile movedToFile) {
-		// TODO!
-		//updateInputFile(movedToFile.getFullPath());
+	/**
+	 * The editor part name should be the same as the one appearing in the logical view.
+	 */
+	//FIXME should be moved to multi or even removed at all
+	protected void updateTitle() {
+		setPartName(getProcess().getName());
 	}
 
-	public void modelReloaded(ResourceInfo resourceInfo) {
-		Resource bpelResource = editModelClient.getPrimaryResourceInfo().getResource();
-
-		IFile file = getFileInput();
-		BPELReader reader = new BPELReader();
-	    reader.read(bpelResource, file, getResourceSet());
-		 
-	    this.process = reader.getProcess();
-	    if (getEditDomain() != null) {
-	    	((BPELEditDomain)getEditDomain()).setProcess(process);
-	    }
-	    this.extensionMap = reader.getExtensionMap();
-	    
-		this.modelListenerAdapter.setExtensionMap(extensionMap);
-	
-		getGraphicalViewer().setContents(process);
-
-		// The ProcessTrayEditPart tries to remove its selection listener on deactivate.
-		// In this case, it will fail because the edit part can't find the editor because
-		// the process no longer belongs to a resource. Help it out and remove the
-		// listener manually.
-		ProcessTrayEditPart processTrayEditPart = (ProcessTrayEditPart)getTrayViewer().getContents();
-		getGraphicalViewer().removeSelectionChangedListener(processTrayEditPart.getSelectionChangedListener());
-		
-		getTrayViewer().setContents(process);
-	}
-	
 	protected boolean updateInputFile(IPath filePath) {
 		if (filePath == null) {
 			return false;
@@ -1574,13 +1364,6 @@ public class BPELEditor extends GraphicalEditorWithPaletteAndTray implements IEd
 		setInputWithNotify(new FileEditorInput(file));
 		updateTitle();
 		return true;
-	}
-	
-	/**
-	 * The editor part name should be the same as the one appearing in the logical view.
-	 */
-	protected void updateTitle() {
-		setPartName(process.getName());
 	}
 	
 	/** 

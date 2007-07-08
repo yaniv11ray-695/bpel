@@ -12,17 +12,31 @@
 
 package org.eclipse.bpel.ui;
 
+import org.eclipse.bpel.common.extension.model.ExtensionMap;
+import org.eclipse.bpel.common.ui.editmodel.IEditModelListener;
+import org.eclipse.bpel.common.ui.editmodel.ResourceInfo;
 import org.eclipse.bpel.model.Activity;
 import org.eclipse.bpel.model.CorrelationSet;
 import org.eclipse.bpel.model.ExtensibleElement;
 import org.eclipse.bpel.model.PartnerLink;
+import org.eclipse.bpel.model.Process;
 import org.eclipse.bpel.model.Variable;
+import org.eclipse.bpel.ui.BPELEditor.BPELEditorAdapter;
+import org.eclipse.bpel.ui.editparts.ProcessTrayEditPart;
 import org.eclipse.bpel.ui.editparts.util.OutlineTreePartFactory;
 import org.eclipse.bpel.ui.properties.BPELPropertySection;
 import org.eclipse.bpel.ui.uiextensionmodel.StartNode;
+import org.eclipse.bpel.ui.util.BPELEditModelClient;
+import org.eclipse.bpel.ui.util.BPELReader;
 import org.eclipse.bpel.ui.util.ModelHelper;
 
+import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IMarker;
+import org.eclipse.core.resources.IResourceChangeEvent;
+import org.eclipse.core.resources.IResourceChangeListener;
+import org.eclipse.core.resources.IResourceDelta;
+import org.eclipse.core.resources.IWorkspace;
+import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.draw2d.IFigure;
@@ -31,13 +45,17 @@ import org.eclipse.draw2d.Viewport;
 import org.eclipse.draw2d.parts.ScrollableThumbnail;
 import org.eclipse.draw2d.parts.Thumbnail;
 import org.eclipse.emf.ecore.EObject;
+import org.eclipse.emf.ecore.resource.Resource;
+import org.eclipse.emf.ecore.resource.ResourceSet;
 import org.eclipse.gef.ContextMenuProvider;
+import org.eclipse.gef.DefaultEditDomain;
 import org.eclipse.gef.EditPart;
 import org.eclipse.gef.EditPartViewer;
 import org.eclipse.gef.GraphicalEditPart;
 import org.eclipse.gef.GraphicalViewer;
 import org.eclipse.gef.LayerConstants;
 import org.eclipse.gef.RootEditPart;
+import org.eclipse.gef.commands.CommandStack;
 import org.eclipse.gef.editparts.ZoomManager;
 import org.eclipse.gef.ui.actions.ActionRegistry;
 import org.eclipse.gef.ui.parts.ContentOutlinePage;
@@ -60,11 +78,14 @@ import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Canvas;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
+import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.IActionBars;
 import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.IEditorSite;
+import org.eclipse.ui.IFileEditorInput;
 import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.IWorkbenchPage;
+import org.eclipse.ui.IWorkbenchPartSite;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.actions.ActionFactory;
@@ -72,8 +93,10 @@ import org.eclipse.ui.ide.IGotoMarker;
 import org.eclipse.ui.internal.views.properties.tabbed.view.Tab;
 import org.eclipse.ui.internal.views.properties.tabbed.view.TabDescriptor;
 import org.eclipse.ui.internal.views.properties.tabbed.view.TabbedPropertyViewer;
+import org.eclipse.ui.part.FileEditorInput;
 import org.eclipse.ui.part.IPageSite;
 import org.eclipse.ui.part.MultiPageEditorPart;
+import org.eclipse.ui.part.MultiPageEditorSite;
 import org.eclipse.ui.part.PageBook;
 import org.eclipse.ui.views.contentoutline.IContentOutlinePage;
 import org.eclipse.ui.views.properties.IPropertySheetPage;
@@ -85,7 +108,8 @@ import org.eclipse.wst.sse.ui.StructuredTextEditor;
 import org.w3c.dom.Element;
 
 public class BPELMultipageEditorPart extends MultiPageEditorPart 
-										implements IGotoMarker {
+										implements IEditModelListener, 
+										           IGotoMarker {
 
 	class OutlinePage extends ContentOutlinePage {
 		private PageBook pageBook;
@@ -106,7 +130,7 @@ public class BPELMultipageEditorPart extends MultiPageEditorPart
 		}
 
 		private void configureOutlineViewer() {
-			getViewer().setEditDomain(fDesignViewer.getEditDomain());
+			getViewer().setEditDomain(getEditDomain());
 			getViewer().setEditPartFactory(new OutlineTreePartFactory());
 
 			fDesignViewer.registerViewer(getViewer());
@@ -160,8 +184,7 @@ public class BPELMultipageEditorPart extends MultiPageEditorPart
 			// TODO: Add to the adapting selection provider
 			//getSelectionSynchronizer().addViewer(getViewer());
 
-			//FIXME move process to this class
-			getViewer().setContents(fDesignViewer.getProcess());
+			getViewer().setContents(getProcess());
 		}
 
 		private void initializeOverview() {
@@ -212,16 +235,37 @@ public class BPELMultipageEditorPart extends MultiPageEditorPart
 		}
 	}
 
+	private Process process;
+	
+	private DefaultEditDomain editDomain;
+	
+	protected ModelListenerAdapter modelListenerAdapter;
+	
+	private Resource extensionsResource;
+	
+	private ExtensionMap extensionMap;
 	
 	private StructuredTextEditor fTextEditor = null;
 	private BPELEditor fDesignViewer = null;
+	
+	// reacts to changes on the BPEL file (e.g. move, rename)
+	private IFileChangeListener fileChangeListener;
+	
+	// refactoring listeners
+	protected IResourceChangeListener postBuildRefactoringListener;
+
 	
 	private OutlinePage outlinePage;
 	protected BPELTabbedPropertySheetPage currentPropertySheetPage;
 	
 	private static int DESIGN_PAGE_INDEX = 0;
 	private static int SOURCE_PAGE_INDEX = 1;
+
 	
+	public BPELMultipageEditorPart() {
+		super();
+		setEditDomain(new BPELEditDomain(this));
+	}
 	/**
 	 * Adds the source page of the multi-page editor.
 	 */
@@ -290,8 +334,9 @@ public class BPELMultipageEditorPart extends MultiPageEditorPart
 	}
 
 	private void createAndAddDesignPage() {
-		fDesignViewer = new BPELEditor();
-
+		fDesignViewer = new BPELEditor(getEditDomain());
+		loadModel();
+		
 		try
 	    {
 			addPage(DESIGN_PAGE_INDEX, fDesignViewer, getEditorInput());
@@ -319,22 +364,100 @@ public class BPELMultipageEditorPart extends MultiPageEditorPart
 			createAndAddDesignPage();
 			addSourcePage();
 			connectDesignPage();
+			initializeFileChangeListener();
+			initializeRefactoringListener();
 		} catch (PartInitException e) {
 			//Logger.logException(e);
 			throw new RuntimeException(e);
 		} 
+		
+		//updateTitle();
 	}
 
 
 	public void dispose() {
-		if (outlinePage != null && outlinePage.getViewer() != null) {
+		/*if (outlinePage != null && outlinePage.getViewer() != null) {
 			outlinePage.getViewer().setContents(null);
-		}
+		}*/
 		outlinePage = null;
-		fDesignViewer.dispose();
-		fTextEditor.dispose();
+ 		process = null;
+ 		
+		if (fileChangeListener != null) {
+			BPELUIPlugin.getPlugin().getResourceChangeListener().removeListener(fileChangeListener);
+		}
+
+		if (postBuildRefactoringListener != null) {
+			IWorkspace workspace = ResourcesPlugin.getWorkspace();
+			workspace.removeResourceChangeListener(postBuildRefactoringListener);
+		}
+
+		//FIXME should we call them? Looks like no.
+		//fDesignViewer.dispose();
+		//fTextEditor.dispose();
+
+		super.dispose();
 	}
 	
+	public void doRevertToSaved(IProgressMonitor monitor) {
+		// Do the work within an operation because this is a long running activity that modifies the workbench.
+//		WorkspaceModifyOperation operation = new WorkspaceModifyOperation() {
+//			protected void execute(IProgressMonitor monitor) throws CoreException {
+//				try {
+//					getCommandFramework().abortCurrentChange();
+//					getCommandStack().flush();
+//					
+//					// de-select anything selected on the canvas!  Otherwise removing things
+//					// will trigger a bunch of behaviour when the selected object(s) are
+//					// removed..
+//					adaptingSelectionProvider.setSelection(StructuredSelection.EMPTY);
+//					
+//					process = null;
+//					extensionMap = null;
+//					extensionsResource = null;
+//					lastSelectedEditPart = null;
+//					// unload all resources (otherwise they stay around taking up space..?)
+//					for (Iterator it = getResourceSet().getResources().iterator(); it.hasNext(); ) {
+//						Resource res = (Resource)it.next();
+//						res.unload();
+//					}
+//					loadModel();
+//					getGraphicalViewer().setContents(process);
+//					getTrayViewer().setContents(process);
+//					if (outlinePage != null && outlinePage.getViewer() != null) {
+//                      // hack!
+//						if (Platform.getWS().equals(Platform.WS_GTK)) {
+//							Tree tree = (Tree) outlinePage.getViewer().getControl();
+//							if (tree != null) {
+//								tree.setRedraw(false);
+//								TreeItem[] items = tree.getItems();
+//								for (int i = 0; i < items.length; i++) {
+//									items[i].dispose();
+//								}
+//								tree.setRedraw(true);
+//							}
+//						}
+//						outlinePage.getViewer().setContents(process);
+//					}
+//					selectModelObject(getProcess());
+//				}
+//				catch (Exception e) {
+//					BPELUIPlugin.log(e);
+//				}
+//			}
+//		};
+//
+//		try {
+//			// This runs the options, and shows progress.
+//			// (It appears to be a bad thing to fork this onto another thread.)
+//			new ProgressMonitorDialog(getSite().getShell()).run(false, false, operation);
+//
+//			// Refresh the necessary state.
+//			firePropertyChange(IEditorPart.PROP_DIRTY);
+//		} catch (Exception e) {
+//			BPELUIPlugin.log(e);
+//		}
+	}
+
 	/**
 	 * @see org.eclipse.ui.IEditorPart#doSave(org.eclipse.core.runtime.IProgressMonitor)
 	 */
@@ -365,6 +488,34 @@ public class BPELMultipageEditorPart extends MultiPageEditorPart
 
 	
 	public Object getAdapter(Class type) {
+		if (type == Process.class) {
+			return process;
+		}
+		
+		if (type == BPELEditModelClient.class) {
+			return process;
+		}
+
+		//FIXME should we kill it?
+		if (type == ModelListenerAdapter.class) {
+			return modelListenerAdapter;
+		}
+
+		//FIXME should we kill it?
+		if (type == Resource.class) {
+			return extensionsResource;
+		}
+
+		//FIXME should we kill it?
+		if (type == ExtensionMap.class) {
+			return extensionMap;
+		}
+
+		//FIXME should we kill it?
+		if (type == CommandStack.class) {
+			return getCommandStack();
+		}
+
 		if (type == IContentOutlinePage.class) {
 			if (outlinePage == null) {
 				outlinePage = new OutlinePage(new TreeViewer());
@@ -381,6 +532,42 @@ public class BPELMultipageEditorPart extends MultiPageEditorPart
 
 	    return super.getAdapter(type);
 	  }
+
+	public CommandStack getCommandStack() {
+		return getEditDomain().getCommandStack();
+	}
+	
+	/**
+	 * Returns the design viewer
+	 * @return the design viewer
+	 */
+	protected BPELEditor getDesignEditor() {
+		return fDesignViewer;
+	}
+
+	/**
+	 * Returns the edit domain.
+	 * @return the edit domain
+	 */
+	protected DefaultEditDomain getEditDomain() {
+		return editDomain;
+	}
+
+	protected IFile getFileInput() {
+		return ((IFileEditorInput) getEditorInput()).getFile();
+	}
+
+	public Process getProcess() {
+		return process;
+	}
+
+	/**
+	 * Returns the design viewer
+	 * @return the design viewer
+	 */
+	protected StructuredTextEditor getSourceViewer() {
+		return fTextEditor;
+	}
 
 	StructuredTextEditor getTextEditor() {
 		return fTextEditor;
@@ -539,16 +726,6 @@ public class BPELMultipageEditorPart extends MultiPageEditorPart
 		}
 	}
 	
-	protected void showPropertiesView() {
-		IWorkbench workbench = PlatformUI.getWorkbench();
-		IWorkbenchPage page = workbench.getActiveWorkbenchWindow().getActivePage();
-		try {
-			page.showView(IBPELUIConstants.PROPERTY_VIEW_ID);
-		} catch (PartInitException e) {
-			BPELUIPlugin.log(e);
-		}
-	}
-
 	/*
 	 * (non-Javadoc)
 	 * 
@@ -564,6 +741,84 @@ public class BPELMultipageEditorPart extends MultiPageEditorPart
 		setPartName(input.getName());
 	}
 	
+	protected void initializeFileChangeListener() {
+		fileChangeListener = new IFileChangeListener() {
+			public void deleted(IFile file) {
+				IFile current = ((IFileEditorInput)getEditorInput()).getFile();
+				if (current.equals(file)) {
+					// Close the editor.
+					Display display = getSite().getShell().getDisplay();
+					display.asyncExec(new Runnable() {
+						public void run() {
+							getSite().getPage().closeEditor(BPELMultipageEditorPart.this, false);
+						}
+					});
+				}
+			}
+			public void moved(IFile source, final IFile destination) {
+//				IFile current = ((IFileEditorInput) getEditorInput()).getFile();
+//				if (!current.equals(source)) {
+//					return;
+//				}
+//				// update editors input
+//				final IFileEditorInput input = new FileEditorInput(destination);
+//				Display display = getDetailsEditor().getSite().getShell().getDisplay();
+//				display.syncExec(new Runnable() {
+//					public void run() {
+//						getBPELDetailsEditor().setInput(input);
+//						setInput(input);
+//					}
+//				});
+//				// update resources
+//				IPath path = destination.getFullPath();
+//				URI uri = URI.createPlatformResourceURI(path.toString());
+//				processResource.setURI(uri);
+//				// JM: Comment out. We don't want to re-name the process just because
+//				// the file name has changed
+////				display.syncExec(new Runnable() {
+////					public void run() {
+////						BPELUtil.updateNameAndNamespace(destination, process);
+////					}
+////				});
+//				path = path.removeFileExtension().addFileExtension(IBPELUIConstants.EXTENSION_MODEL_EXTENSIONS);
+//				URI extensionsUri = URI.createPlatformResourceURI(path.toString());
+//				extensionsResource = resourceSet.createResource(extensionsUri);
+//				extensionsResource.setURI(extensionsUri);
+//				try {
+//					// JM: Comment out for now. We should re-test this
+////					processResource.save(Collections.EMPTY_MAP);
+////					destination.refreshLocal(IResource.DEPTH_ZERO, null);
+//				} catch (Exception e) {
+//					BPELUIPlugin.log(e);
+//				}
+			}
+		};
+		BPELUIPlugin.getPlugin().getResourceChangeListener().addListener(fileChangeListener);
+	}
+
+	
+	/**
+	 * Installs the refactoring listener
+	 */
+	protected void initializeRefactoringListener() {
+		final IWorkspace workspace = ResourcesPlugin.getWorkspace();
+		postBuildRefactoringListener = new IResourceChangeListener() {
+			public void resourceChanged(IResourceChangeEvent event) {
+				IFile newFile = ((FileEditorInput)getEditorInput()).getFile();
+				final IResourceDelta bpelFileDelta = event.getDelta().findMember(newFile.getFullPath());
+				// we only care about the change if it is a move or a rename
+				if (bpelFileDelta != null && (bpelFileDelta.getFlags() & IResourceDelta.MOVED_FROM) != 0) {
+					getSite().getShell().getDisplay().syncExec(new Runnable() {
+						public void run() {
+							doRevertToSaved(null);
+						}
+					});
+				}
+			}
+		};
+		workspace.addResourceChangeListener(postBuildRefactoringListener, IResourceChangeEvent.POST_BUILD);
+	}
+
 	/*
 	 * (non-Javadoc)
 	 * 
@@ -572,5 +827,96 @@ public class BPELMultipageEditorPart extends MultiPageEditorPart
 	public boolean isSaveAsAllowed() {
 		return false;
 	}
-}
 
+	private void loadModel() {
+		//FIXME WSDLEditor has gef command stack; in order to have gef command stack we need to add design page first 
+		BPELEditModelClient editModelClient = new BPELEditModelClient(this, ((IFileEditorInput) getEditorInput()).getFile(), this, null);
+		fDesignViewer.setEditModelClient(editModelClient);
+		getEditDomain().setCommandStack(editModelClient.getCommandStack());
+
+		Resource bpelResource = editModelClient.getPrimaryResourceInfo().getResource();
+		IFile file = getFileInput();
+		BPELReader reader = new BPELReader();
+	    reader.read(bpelResource, file, fDesignViewer.getResourceSet());
+	    process = reader.getProcess();
+	    
+	    if (getEditDomain() != null) {
+	    	((BPELEditDomain)getEditDomain()).setProcess(getProcess());
+	    }
+	    extensionsResource = reader.getExtensionsResource();
+	    extensionMap = reader.getExtensionMap();
+
+	    modelListenerAdapter = new ModelListenerAdapter();
+	    modelListenerAdapter.setExtensionMap(extensionMap);
+		
+	}
+
+	public void modelDeleted(ResourceInfo resourceInfo) {
+		if (!isDirty()) {
+			getSite().getPage().closeEditor(this, false);
+		}
+	}
+	
+	public void modelDirtyStateChanged(ResourceInfo resourceInfo) {
+		firePropertyChange(PROP_DIRTY);
+	}
+	
+	public void modelLocationChanged(ResourceInfo resourceInfo, IFile movedToFile) {
+		// TODO!
+		//updateInputFile(movedToFile.getFullPath());
+	}
+
+	public void modelReloaded(ResourceInfo resourceInfo) {
+		Resource bpelResource = fDesignViewer.getEditModelClient().getPrimaryResourceInfo().getResource();
+
+		IFile file = getFileInput();
+		BPELReader reader = new BPELReader();
+	    reader.read(bpelResource, file, fDesignViewer.getResourceSet());
+		 
+	    process = reader.getProcess();
+	    if (getEditDomain() != null) {
+	    	((BPELEditDomain)getEditDomain()).setProcess(getProcess());
+	    }
+	    extensionMap = reader.getExtensionMap();
+	    
+		modelListenerAdapter.setExtensionMap(fDesignViewer.getExtensionMap());
+	
+		fDesignViewer.getGraphicalViewer().setContents(getProcess());
+
+		// The ProcessTrayEditPart tries to remove its selection listener on deactivate.
+		// In this case, it will fail because the edit part can't find the editor because
+		// the process no longer belongs to a resource. Help it out and remove the
+		// listener manually.
+		ProcessTrayEditPart processTrayEditPart = (ProcessTrayEditPart)fDesignViewer.getTrayViewer().getContents();
+		fDesignViewer.getGraphicalViewer().removeSelectionChangedListener(processTrayEditPart.getSelectionChangedListener());
+		
+		fDesignViewer.getTrayViewer().setContents(getProcess());
+	}
+	
+
+	/**
+	 * Sets the EditDomain for this EditorPart.
+	 * @param ed the domain
+	 */
+	protected void setEditDomain(DefaultEditDomain ed) {
+		this.editDomain = ed;
+	}
+
+	protected void showPropertiesView() {
+		IWorkbench workbench = PlatformUI.getWorkbench();
+		IWorkbenchPage page = workbench.getActiveWorkbenchWindow().getActivePage();
+		try {
+			page.showView(IBPELUIConstants.PROPERTY_VIEW_ID);
+		} catch (PartInitException e) {
+			BPELUIPlugin.log(e);
+		}
+	}
+	
+	/**
+	 * The editor part name should be the same as the one appearing in the logical view.
+	 */
+	protected void updateTitle() {
+		setPartName(getProcess().getName());
+	}
+
+}
