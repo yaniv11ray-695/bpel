@@ -12,6 +12,8 @@
 
 package org.eclipse.bpel.ui;
 
+import java.util.HashMap;
+
 import org.eclipse.bpel.common.extension.model.ExtensionMap;
 import org.eclipse.bpel.common.ui.editmodel.IEditModelListener;
 import org.eclipse.bpel.common.ui.editmodel.ResourceInfo;
@@ -21,7 +23,6 @@ import org.eclipse.bpel.model.ExtensibleElement;
 import org.eclipse.bpel.model.PartnerLink;
 import org.eclipse.bpel.model.Process;
 import org.eclipse.bpel.model.Variable;
-import org.eclipse.bpel.ui.BPELEditor.BPELEditorAdapter;
 import org.eclipse.bpel.ui.editparts.ProcessTrayEditPart;
 import org.eclipse.bpel.ui.editparts.util.OutlineTreePartFactory;
 import org.eclipse.bpel.ui.properties.BPELPropertySection;
@@ -39,24 +40,20 @@ import org.eclipse.core.resources.IWorkspace;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.draw2d.IFigure;
 import org.eclipse.draw2d.LightweightSystem;
 import org.eclipse.draw2d.Viewport;
 import org.eclipse.draw2d.parts.ScrollableThumbnail;
 import org.eclipse.draw2d.parts.Thumbnail;
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.resource.Resource;
-import org.eclipse.emf.ecore.resource.ResourceSet;
 import org.eclipse.gef.ContextMenuProvider;
 import org.eclipse.gef.DefaultEditDomain;
 import org.eclipse.gef.EditPart;
 import org.eclipse.gef.EditPartViewer;
-import org.eclipse.gef.GraphicalEditPart;
 import org.eclipse.gef.GraphicalViewer;
 import org.eclipse.gef.LayerConstants;
 import org.eclipse.gef.RootEditPart;
 import org.eclipse.gef.commands.CommandStack;
-import org.eclipse.gef.editparts.ZoomManager;
 import org.eclipse.gef.ui.actions.ActionRegistry;
 import org.eclipse.gef.ui.parts.ContentOutlinePage;
 import org.eclipse.gef.ui.parts.TreeViewer;
@@ -64,14 +61,10 @@ import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.action.IToolBarManager;
 import org.eclipse.jface.dialogs.ErrorDialog;
-import org.eclipse.jface.text.TextSelection;
-import org.eclipse.jface.viewers.IContentProvider;
-import org.eclipse.jface.viewers.ILabelProvider;
+import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.ISelectionChangedListener;
-import org.eclipse.jface.viewers.ISelectionProvider;
 import org.eclipse.jface.viewers.IStructuredSelection;
-import org.eclipse.jface.viewers.ITreeContentProvider;
 import org.eclipse.jface.viewers.SelectionChangedEvent;
 import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.swt.SWT;
@@ -85,7 +78,6 @@ import org.eclipse.ui.IEditorSite;
 import org.eclipse.ui.IFileEditorInput;
 import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.IWorkbenchPage;
-import org.eclipse.ui.IWorkbenchPartSite;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.actions.ActionFactory;
@@ -96,15 +88,19 @@ import org.eclipse.ui.internal.views.properties.tabbed.view.TabbedPropertyViewer
 import org.eclipse.ui.part.FileEditorInput;
 import org.eclipse.ui.part.IPageSite;
 import org.eclipse.ui.part.MultiPageEditorPart;
-import org.eclipse.ui.part.MultiPageEditorSite;
 import org.eclipse.ui.part.PageBook;
 import org.eclipse.ui.views.contentoutline.IContentOutlinePage;
 import org.eclipse.ui.views.properties.IPropertySheetPage;
 import org.eclipse.ui.views.properties.tabbed.ISection;
 import org.eclipse.ui.views.properties.tabbed.ITabbedPropertySheetPageContributor;
+import org.eclipse.wst.sse.core.StructuredModelManager;
+import org.eclipse.wst.sse.core.internal.provisional.IStructuredModel;
+import org.eclipse.wst.sse.core.internal.provisional.text.IStructuredDocument;
 import org.eclipse.wst.sse.ui.StructuredTextEditor;
+import org.eclipse.wst.xml.core.internal.provisional.document.IDOMModel;
 
 
+import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
 public class BPELMultipageEditorPart extends MultiPageEditorPart 
@@ -266,20 +262,6 @@ public class BPELMultipageEditorPart extends MultiPageEditorPart
 		super();
 		setEditDomain(new BPELEditDomain(this));
 	}
-	/**
-	 * Adds the source page of the multi-page editor.
-	 */
-	private void addSourcePage() throws PartInitException {
-	    try
-	    {
-	    	addPage(SOURCE_PAGE_INDEX, fTextEditor, getEditorInput());
-	    	//FIXME I18N
-	    	setPageText(SOURCE_PAGE_INDEX, "Source");
-	    	firePropertyChange(PROP_TITLE);
-	    } catch (PartInitException e) {
-	    	ErrorDialog.openError(getSite().getShell(), "Error creating nested text editor", null, e.getStatus()); //$NON-NLS-1$
-	    }
-	}
 
 	/**
 	 * Connects the design viewer with the viewer selection manager. Should be
@@ -320,10 +302,12 @@ public class BPELMultipageEditorPart extends MultiPageEditorPart
 						} 
 					
 						if (selectedNodeElement != null) {
-							int charStart = ((Number)selectedNodeElement.getUserData("location.charStart")).intValue();
+							StructuredSelection nodeSelection = new StructuredSelection(selectedNodeElement);
+							getTextEditor().getSelectionProvider().setSelection(nodeSelection);
+							//int charStart = ((Number)selectedNodeElement.getUserData("location.charStart")).intValue();
 							//-1 to point to the '<' literal  
-							TextSelection textSelection = new TextSelection(charStart - 1, 0);
-							getTextEditor().getSelectionProvider().setSelection(textSelection);
+							//TextSelection textSelection = new TextSelection(charStart - 1, 0);
+							//getTextEditor().getSelectionProvider().setSelection(textSelection);
 						}
 					} catch (Exception e) {
 						e.printStackTrace();
@@ -333,36 +317,47 @@ public class BPELMultipageEditorPart extends MultiPageEditorPart
 		});
 	}
 
-	private void createAndAddDesignPage() {
+	/**
+	 * Creates the design page of the multi-page editor.
+	 */
+	private void createDesignPage() {
 		fDesignViewer = new BPELEditor(getEditDomain());
 		loadModel();
 		
 		try
 	    {
-			addPage(DESIGN_PAGE_INDEX, fDesignViewer, getEditorInput());
+			addPage(0, fDesignViewer, getEditorInput());
 			//FIXME I18N
-			setPageText(DESIGN_PAGE_INDEX, "Design");
-			firePropertyChange(PROP_TITLE);
+			setPageText(0, "Design");
 	    } catch (PartInitException e) {
-	    	ErrorDialog.openError(getSite().getShell(), "Error creating nested BPEL editor", null, e.getStatus()); //$NON-NLS-1$
+	    	ErrorDialog.openError(getSite().getShell(), "Error creating Design page", null, e.getStatus()); //$NON-NLS-1$
 	    }
 	}
 
-	private void createSourcePage() {
+	/**
+	 * Creates the source page of the multi-page editor.
+	 */
+	private void createSourcePage() throws PartInitException {
 		fTextEditor = new StructuredTextEditor();
+		try
+	    {
+	    	addPage(0, fTextEditor, getEditorInput());
+	    	//FIXME I18N
+	    	setPageText(0, "Source");
+	    } catch (PartInitException e) {
+	    	ErrorDialog.openError(getSite().getShell(), "Error creating Source page", null, e.getStatus()); //$NON-NLS-1$
+	    }
 	}
 
-	
 	/**
 	 * Creates the pages of this multi-page editor.
 	 */
 	protected void createPages() {
-		// source page must be created before design page
-			
 		try {
+			// source page must be created before design page
 			createSourcePage();
-			createAndAddDesignPage();
-			addSourcePage();
+			createDesignPage();
+	    	firePropertyChange(PROP_TITLE);
 			connectDesignPage();
 			initializeFileChangeListener();
 			initializeRefactoringListener();
@@ -391,9 +386,8 @@ public class BPELMultipageEditorPart extends MultiPageEditorPart
 			workspace.removeResourceChangeListener(postBuildRefactoringListener);
 		}
 
-		//FIXME should we call them? Looks like no.
-		//fDesignViewer.dispose();
-		//fTextEditor.dispose();
+		fDesignViewer.dispose();
+		fTextEditor.dispose();
 
 		super.dispose();
 	}
@@ -829,8 +823,31 @@ public class BPELMultipageEditorPart extends MultiPageEditorPart
 	}
 
 	private void loadModel() {
+		Document structuredDocument = null;
+		
+		try {
+			IDocument doc = fTextEditor.getDocumentProvider().getDocument(getEditorInput());
+			if (doc instanceof IStructuredDocument) {
+				IStructuredModel model = StructuredModelManager.getModelManager().getExistingModelForEdit(doc);
+				if (model == null) {
+					model = StructuredModelManager.getModelManager().getModelForEdit((IStructuredDocument) doc);
+				}
+				if (model != null) {
+					structuredDocument = ((IDOMModel) model).getDocument();
+				}
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}    
+		
+		HashMap loadOptions = null; 
+		if (structuredDocument != null) {
+			loadOptions = new HashMap (1);
+			loadOptions.put("DOMDocument", structuredDocument);
+		}
+		
 		//FIXME WSDLEditor has gef command stack; in order to have gef command stack we need to add design page first 
-		BPELEditModelClient editModelClient = new BPELEditModelClient(this, ((IFileEditorInput) getEditorInput()).getFile(), this, null);
+		BPELEditModelClient editModelClient = new BPELEditModelClient(this, ((IFileEditorInput) getEditorInput()).getFile(), this, loadOptions);
 		fDesignViewer.setEditModelClient(editModelClient);
 		getEditDomain().setCommandStack(editModelClient.getCommandStack());
 
