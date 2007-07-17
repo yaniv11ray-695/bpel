@@ -329,7 +329,7 @@ public class ModelQuery implements IModelQuery, IConstants {
 		 
 		 // set it on all the children of this element as well.
 		 //
-		 Iterator<Object> it = eObj.eAllContents();
+		 Iterator<EObject> it = eObj.eAllContents();
 		 
 		 while (it.hasNext()) {
 			 Object next = it.next();
