@@ -19,6 +19,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import org.eclipse.bpel.model.resource.BPELResourceSetImpl;
+
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
@@ -360,7 +362,7 @@ private static class EditModelCache {
 		if(resourceSet != null)
 			return resourceSet;
 		// TODO: Extensibility
-		resourceSet = new ResourceSetImpl();
+		resourceSet = new BPELResourceSetImpl();
 		fileToResourceSet.put(primaryFile,resourceSet);
 		return resourceSet;	
 	}
