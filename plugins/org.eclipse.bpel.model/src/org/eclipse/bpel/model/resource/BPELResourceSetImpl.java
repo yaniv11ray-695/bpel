@@ -126,5 +126,8 @@ public class BPELResourceSetImpl extends ResourceSetImpl {
 		return resource;
 	}
 	
+	public void setLoadOptions (Map<Object, Object> options) {
+		loadOptions = options;
+	}
 	
 }

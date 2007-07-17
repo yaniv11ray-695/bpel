@@ -122,6 +122,26 @@ public class BPELReader {
 		this.domParser = parser;
 	}
 	
+	public BPELReader ()  {		
+	}
+
+	/**
+	 * Read from the given Document into the given resource.
+	 * 
+	 * @param resource the EMF resource to construct
+	 * @param Document the document to read the BPEL from
+	 */
+	public void read(BPELResource resource, Document doc) {
+		this.resource = resource;
+		// Pass 1 and 2 are inside the try so they don't occur if
+		// an error happens during parsing.
+		// In pass 1 we parse and create the structural elements and attributes. 
+		pass1(doc);
+		// In pass 2, we run any postLoadRunnables which need to happen after
+		// pass 1 (for example, establishing object links to variables).
+		pass2();
+	}
+
 	/**
 	 * Read from the given input stream into the given resource.
 	 * 
@@ -3027,7 +3047,11 @@ public class BPELReader {
    }
 	
 	
-	/**
+	public Process getProcess () {
+		return process;
+	}
+   
+   /**
 	 * Helper method to get a string from the given text node or CDATA text node.
 	 */
 	private String getText (Node node) {

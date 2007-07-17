@@ -45,6 +45,7 @@ import org.eclipse.xsd.impl.XSDSchemaImpl;
 import org.eclipse.xsd.util.XSDConstants;
 import org.w3c.dom.Attr;
 import org.w3c.dom.Element;
+import org.w3c.dom.Document;
 import org.xml.sax.EntityResolver;
 import org.xml.sax.ErrorHandler;
 
@@ -160,15 +161,22 @@ public class BPELResourceImpl extends XMLResourceImpl implements BPELResource {
 		// BPELReader reader = new BPELReader(getDocumentBuilder());
         
         BPELReader reader = null;
-        try {
-        	reader = new BPELReader( getDOMParser() );
-        } catch (IOException ioe) {
-        	throw ioe;
-        } catch (Exception ex) {
-        	throw new IOException("Problem create parser");
-        }
+        Document document = null;
         
-		reader.read(this, inputStream);
+        if (options != null 
+        		&& (document = (org.w3c.dom.Document)options.get("DOMDocument")) != null) {
+        	reader = new BPELReader();
+        	reader.read(this, document);
+        } else {
+        	try {
+        		reader = new BPELReader( getDOMParser() );
+        	} catch (IOException ioe) {
+        		throw ioe;
+        	} catch (Exception ex) {
+        		throw new IOException("Problem create parser");
+        	}
+    		reader.read(this, inputStream);
+        }
         
         setNamespaceURI(BPELConstants.NAMESPACE);
 	}
