@@ -351,6 +351,16 @@ public class BPELWriter {
 		}
 	}
     
+	public BPELWriter() {
+	}
+
+	public BPELWriter(BPELResource resource, Document document) {
+		this();
+		this.bpelResource = resource;
+		this.document = document;
+		bpelNamespacePrefixManager = new NamespacePrefixManager(resource);
+	}
+	
 	/** 
 	 * Convert the BPEL model to an XML DOM model and then write the DOM model
 	 * to the output stream.
