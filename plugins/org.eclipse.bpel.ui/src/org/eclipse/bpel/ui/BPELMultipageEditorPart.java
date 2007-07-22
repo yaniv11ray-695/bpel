@@ -304,10 +304,6 @@ public class BPELMultipageEditorPart extends MultiPageEditorPart
 						if (selectedNodeElement != null) {
 							StructuredSelection nodeSelection = new StructuredSelection(selectedNodeElement);
 							getTextEditor().getSelectionProvider().setSelection(nodeSelection);
-							//int charStart = ((Number)selectedNodeElement.getUserData("location.charStart")).intValue();
-							//-1 to point to the '<' literal  
-							//TextSelection textSelection = new TextSelection(charStart - 1, 0);
-							//getTextEditor().getSelectionProvider().setSelection(textSelection);
 						}
 					} catch (Exception e) {
 						e.printStackTrace();
@@ -456,8 +452,9 @@ public class BPELMultipageEditorPart extends MultiPageEditorPart
 	 * @see org.eclipse.ui.IEditorPart#doSave(org.eclipse.core.runtime.IProgressMonitor)
 	 */
 	public void doSave(IProgressMonitor progressMonitor) {
-		fDesignViewer.doSave(progressMonitor);
+		//fDesignViewer should be saved the last to avoid problems with SynchronizationManager
 		fTextEditor.doSave(progressMonitor);
+		fDesignViewer.doSave(progressMonitor);
 	}
 
 	/*
@@ -856,6 +853,9 @@ public class BPELMultipageEditorPart extends MultiPageEditorPart
 		BPELReader reader = new BPELReader();
 	    reader.read(bpelResource, file, fDesignViewer.getResourceSet());
 	    process = reader.getProcess();
+	    
+	    BPELModelReconcileAdapter bpelModelReconcileAdapter 
+	    = new BPELModelReconcileAdapter (structuredDocument, process);
 	    
 	    if (getEditDomain() != null) {
 	    	((BPELEditDomain)getEditDomain()).setProcess(getProcess());
