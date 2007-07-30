@@ -10,6 +10,7 @@ import java.util.List;
 import javax.xml.namespace.QName;
 import javax.xml.transform.TransformerFactory;
 
+import org.eclipse.bpel.model.Process;
 import org.eclipse.bpel.model.util.BPELConstants;
 
 import org.eclipse.wst.wsdl.Definition;
@@ -51,7 +52,7 @@ public class BPELEditorUtil extends BPELConstants
 
   public BPELEditorUtil()
   {
-    //FIXME add bpel tage here
+    //FIXME add bpel tags here
 	  /*elementNameToTypeMap.put(BINDING_ELEMENT_TAG, new Integer(BINDING));
     elementNameToTypeMap.put(DEFINITION_ELEMENT_TAG, new Integer(DEFINITION));
     elementNameToTypeMap.put(DOCUMENTATION_ELEMENT_TAG, new Integer(DOCUMENTATION));
@@ -68,16 +69,10 @@ public class BPELEditorUtil extends BPELConstants
     elementNameToTypeMap.put(TYPES_ELEMENT_TAG, new Integer(TYPES));*/
   }
 
-  public int getWSDLType(Element element)
+  public String getBPELType(Element element)
   {
-    int result = -1;
-
-    Integer integer = (Integer)elementNameToTypeMap.get(element.getLocalName());
-    if (integer != null)
-    {
-      result = integer.intValue();
-    }
-    return result;
+    String result = "";
+    return element.getLocalName();
   }
 
   protected List getParentElementChain(Element element)
@@ -92,9 +87,9 @@ public class BPELEditorUtil extends BPELConstants
     return list;
   }
 
-  public Object findModelObjectForElement(Definition definition, Element targetElement)
+  public Object findModelObjectForElement(Process process, Element targetElement)
   {
-    Object o = nodeAssociationManager.getModelObjectForNode(definition, targetElement);
+    Object o = nodeAssociationManager.getModelObjectForNode(process, targetElement);
     return o;
   }
 

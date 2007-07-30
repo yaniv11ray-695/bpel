@@ -12,7 +12,10 @@
 
 package org.eclipse.bpel.ui;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
 
 import org.eclipse.bpel.common.extension.model.ExtensionMap;
 import org.eclipse.bpel.common.ui.editmodel.IEditModelListener;
@@ -23,11 +26,13 @@ import org.eclipse.bpel.model.ExtensibleElement;
 import org.eclipse.bpel.model.PartnerLink;
 import org.eclipse.bpel.model.Process;
 import org.eclipse.bpel.model.Variable;
+import org.eclipse.bpel.model.util.BPELConstants;
 import org.eclipse.bpel.ui.editparts.ProcessTrayEditPart;
 import org.eclipse.bpel.ui.editparts.util.OutlineTreePartFactory;
 import org.eclipse.bpel.ui.properties.BPELPropertySection;
 import org.eclipse.bpel.ui.uiextensionmodel.StartNode;
 import org.eclipse.bpel.ui.util.BPELEditModelClient;
+import org.eclipse.bpel.ui.util.BPELEditorUtil;
 import org.eclipse.bpel.ui.util.BPELReader;
 import org.eclipse.bpel.ui.util.ModelHelper;
 
@@ -44,6 +49,7 @@ import org.eclipse.draw2d.LightweightSystem;
 import org.eclipse.draw2d.Viewport;
 import org.eclipse.draw2d.parts.ScrollableThumbnail;
 import org.eclipse.draw2d.parts.Thumbnail;
+import org.eclipse.emf.common.notify.Notifier;
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.resource.Resource;
 import org.eclipse.gef.ContextMenuProvider;
@@ -62,8 +68,10 @@ import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.action.IToolBarManager;
 import org.eclipse.jface.dialogs.ErrorDialog;
 import org.eclipse.jface.text.IDocument;
+import org.eclipse.jface.viewers.IPostSelectionProvider;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.ISelectionChangedListener;
+import org.eclipse.jface.viewers.ISelectionProvider;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.SelectionChangedEvent;
 import org.eclipse.jface.viewers.StructuredSelection;
@@ -97,11 +105,18 @@ import org.eclipse.wst.sse.core.StructuredModelManager;
 import org.eclipse.wst.sse.core.internal.provisional.IStructuredModel;
 import org.eclipse.wst.sse.core.internal.provisional.text.IStructuredDocument;
 import org.eclipse.wst.sse.ui.StructuredTextEditor;
+import org.eclipse.wst.wsdl.Definition;
+import org.eclipse.wst.wsdl.XSDSchemaExtensibilityElement;
+import org.eclipse.wst.wsdl.ui.internal.adapters.basic.W11Description;
+import org.eclipse.wst.wsdl.ui.internal.util.WSDLAdapterFactoryHelper;
+import org.eclipse.wst.wsdl.ui.internal.util.WSDLEditorUtil;
 import org.eclipse.wst.xml.core.internal.provisional.document.IDOMModel;
 
 
+import org.w3c.dom.Attr;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+import org.w3c.dom.Node;
 
 public class BPELMultipageEditorPart extends MultiPageEditorPart 
 										implements IEditModelListener, 
@@ -231,6 +246,57 @@ public class BPELMultipageEditorPart extends MultiPageEditorPart
 		}
 	}
 
+	protected class TextEditorSelectionListener implements ISelectionChangedListener {
+		public void selectionChanged(SelectionChangedEvent event) {
+			if (getActivePage() != DESIGN_PAGE_INDEX) {
+				ISelection selection = event.getSelection();
+				if (selection instanceof IStructuredSelection) {
+					List selections = new ArrayList();
+					for (Iterator i = ((IStructuredSelection) selection).iterator(); i.hasNext();) {
+						Object domNode = i.next();
+						if (domNode instanceof Element) {
+							Object facade = BPELEditorUtil.getInstance().findModelObjectForElement(process, (Element)domNode);
+							if (facade != null) {
+								selections.add(facade);
+							}
+						}
+					}
+					
+					if (!selections.isEmpty()) {
+						StructuredSelection bpelSelection = new StructuredSelection(selections);
+						fDesignViewer.getAdaptingSelectionProvider().setSelection(bpelSelection);
+					}
+				}
+			}
+		}
+	}
+	
+	protected class DesignViewerSelectionListener implements ISelectionChangedListener {
+		public void selectionChanged(SelectionChangedEvent event) {
+			//force selection update if only source page is not active
+			if (getActivePage() != SOURCE_PAGE_INDEX) {
+				try {
+					ISelection sel = fDesignViewer.getSelection();
+					Object selectedNode = ((IStructuredSelection)sel).getFirstElement();
+					Element selectedNodeElement = null;
+					
+					if (selectedNode instanceof StartNode) {
+						selectedNodeElement = ((StartNode)selectedNode).getProcess().getElement();
+					} else if (selectedNode instanceof ExtensibleElement) {
+						selectedNodeElement = ((ExtensibleElement)selectedNode).getElement();
+					} 
+				
+					if (selectedNodeElement != null) {
+						StructuredSelection nodeSelection = new StructuredSelection(selectedNodeElement);
+						getTextEditor().getSelectionProvider().setSelection(nodeSelection);
+					}
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			}
+		}
+	}
+	
 	private Process process;
 	
 	private DefaultEditDomain editDomain;
@@ -244,12 +310,16 @@ public class BPELMultipageEditorPart extends MultiPageEditorPart
 	private StructuredTextEditor fTextEditor = null;
 	private BPELEditor fDesignViewer = null;
 	
+	protected TextEditorSelectionListener textEditorSelectionListener;
+	protected DesignViewerSelectionListener designViewerSelectionListener;
+	
 	// reacts to changes on the BPEL file (e.g. move, rename)
 	private IFileChangeListener fileChangeListener;
 	
 	// refactoring listeners
 	protected IResourceChangeListener postBuildRefactoringListener;
 
+	BPELModelReconcileAdapter bpelModelReconcileAdapter;
 	
 	private OutlinePage outlinePage;
 	protected BPELTabbedPropertySheetPage currentPropertySheetPage;
@@ -270,47 +340,28 @@ public class BPELMultipageEditorPart extends MultiPageEditorPart
 	 * because getModel() needs to reference the TextEditor.
 	 */
 	private void connectDesignPage() {
-		/*
-		 * Connect selection from the Design page to the selection provider
-		 * for the BPELMultiPageEditorPart so that selection changes in the
-		 * Design page will propogate across the workbench
-		 */
-		/*fDesignViewer.getAdaptingSelectionProvider().addSelectionChangedListener(new ISelectionChangedListener() {
-			public void selectionChanged(SelectionChangedEvent event) {
-				((MultiPageSelectionProvider) getSite().getSelectionProvider()).fireSelectionChanged(event);
-			}
-		});*/
 
 		/*
 		 * Connect selection from the Design page to the selection provider of
 		 * the Source page so that selection in the Design page will drive
 		 * selection in the Source page. 
 		 */
-		fDesignViewer.getAdaptingSelectionProvider().addSelectionChangedListener(new ISelectionChangedListener() {
-			public void selectionChanged(SelectionChangedEvent event) {
-				//force selection update if only source page is not active
-				if (getActivePage() != SOURCE_PAGE_INDEX) {
-					try {
-						ISelection sel = fDesignViewer.getSelection();
-						Object selectedNode = ((IStructuredSelection)sel).getFirstElement();
-						Element selectedNodeElement = null;
-						
-						if (selectedNode instanceof StartNode) {
-							selectedNodeElement = ((StartNode)selectedNode).getProcess().getElement();
-						} else if (selectedNode instanceof ExtensibleElement) {
-							selectedNodeElement = ((ExtensibleElement)selectedNode).getElement();
-						} 
-					
-						if (selectedNodeElement != null) {
-							StructuredSelection nodeSelection = new StructuredSelection(selectedNodeElement);
-							getTextEditor().getSelectionProvider().setSelection(nodeSelection);
-						}
-					} catch (Exception e) {
-						e.printStackTrace();
-					}
-				}
-			}
-		});
+		designViewerSelectionListener = new DesignViewerSelectionListener();
+		fDesignViewer.getAdaptingSelectionProvider().addSelectionChangedListener(designViewerSelectionListener);
+		
+		/*
+		 * Connect selection from the Source page to the selection provider of
+		 * the Design page so that selection in the Source page will drive
+		 * selection in the Design page. 
+		 */
+		textEditorSelectionListener = new TextEditorSelectionListener();
+		ISelectionProvider provider = getTextEditor().getSelectionProvider();
+		if (provider instanceof IPostSelectionProvider) {
+			((IPostSelectionProvider) provider).addPostSelectionChangedListener(textEditorSelectionListener);
+		} else {
+			provider.addSelectionChangedListener(textEditorSelectionListener);
+		}
+
 	}
 
 	/**
@@ -854,8 +905,7 @@ public class BPELMultipageEditorPart extends MultiPageEditorPart
 	    reader.read(bpelResource, file, fDesignViewer.getResourceSet());
 	    process = reader.getProcess();
 	    
-	    BPELModelReconcileAdapter bpelModelReconcileAdapter 
-	    = new BPELModelReconcileAdapter (structuredDocument, process);
+	    bpelModelReconcileAdapter = new BPELModelReconcileAdapter (structuredDocument, process);
 	    
 	    if (getEditDomain() != null) {
 	    	((BPELEditDomain)getEditDomain()).setProcess(getProcess());
