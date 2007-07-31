@@ -324,6 +324,8 @@ public class BPELMultipageEditorPart extends MultiPageEditorPart
 	private OutlinePage outlinePage;
 	protected BPELTabbedPropertySheetPage currentPropertySheetPage;
 	
+	protected ActionRegistry actionRegistry;
+	 
 	private static int DESIGN_PAGE_INDEX = 0;
 	private static int SOURCE_PAGE_INDEX = 1;
 
@@ -529,6 +531,13 @@ public class BPELMultipageEditorPart extends MultiPageEditorPart
 	}
 
 	
+	protected ActionRegistry getActionRegistry() {
+		if (actionRegistry == null)
+			actionRegistry = new ActionRegistry();
+		return actionRegistry;
+	}
+
+	
 	public Object getAdapter(Class type) {
 		if (type == Process.class) {
 			return process;
@@ -572,7 +581,11 @@ public class BPELMultipageEditorPart extends MultiPageEditorPart
 			return currentPropertySheetPage;
 		}
 
-	    return super.getAdapter(type);
+		if (type == ActionRegistry.class) {
+			return getActionRegistry();
+		}
+		
+		return super.getAdapter(type);
 	  }
 
 	public CommandStack getCommandStack() {
