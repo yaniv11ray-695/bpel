@@ -19,6 +19,7 @@ Eclipse-LazyStart: true
 Export-Package: org.eclipse.bpel.model,
  org.eclipse.bpel.model.adapters,
  org.eclipse.bpel.model.extensions,
+ org.eclipse.bpel.model.impl,
  org.eclipse.bpel.model.messageproperties,
  org.eclipse.bpel.model.messageproperties.util,
  org.eclipse.bpel.model.partnerlinktype,
