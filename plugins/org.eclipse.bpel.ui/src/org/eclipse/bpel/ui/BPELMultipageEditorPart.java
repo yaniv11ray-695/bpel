@@ -107,6 +107,7 @@ import org.eclipse.wst.sse.core.internal.provisional.text.IStructuredDocument;
 import org.eclipse.wst.sse.ui.StructuredTextEditor;
 import org.eclipse.wst.wsdl.Definition;
 import org.eclipse.wst.wsdl.XSDSchemaExtensibilityElement;
+import org.eclipse.wst.wsdl.ui.internal.WSDLEditorPlugin;
 import org.eclipse.wst.wsdl.ui.internal.adapters.basic.W11Description;
 import org.eclipse.wst.wsdl.ui.internal.util.WSDLAdapterFactoryHelper;
 import org.eclipse.wst.wsdl.ui.internal.util.WSDLEditorUtil;
@@ -309,6 +310,8 @@ public class BPELMultipageEditorPart extends MultiPageEditorPart
 	
 	private StructuredTextEditor fTextEditor = null;
 	private BPELEditor fDesignViewer = null;
+	private int currentPage = -1;
+
 	
 	protected TextEditorSelectionListener textEditorSelectionListener;
 	protected DesignViewerSelectionListener designViewerSelectionListener;
@@ -415,6 +418,12 @@ public class BPELMultipageEditorPart extends MultiPageEditorPart
 			throw new RuntimeException(e);
 		} 
 		
+		if (BPELUIPlugin.getPlugin().getDefaultPage().equals(IBPELUIConstants.SOURCE_PAGE)) {
+			setActivePage(SOURCE_PAGE_INDEX);
+		} else {
+			setActivePage(DESIGN_PAGE_INDEX);
+		}
+		
 		//updateTitle();
 	}
 
@@ -423,6 +432,12 @@ public class BPELMultipageEditorPart extends MultiPageEditorPart
 		/*if (outlinePage != null && outlinePage.getViewer() != null) {
 			outlinePage.getViewer().setContents(null);
 		}*/
+		if (currentPage == SOURCE_PAGE_INDEX) {
+			BPELUIPlugin.getPlugin().setDefaultPage(IBPELUIConstants.SOURCE_PAGE);
+		} else {
+			BPELUIPlugin.getPlugin().setDefaultPage(IBPELUIConstants.DESIGN_PAGE);
+		}
+
 		outlinePage = null;
  		process = null;
  		
@@ -591,6 +606,15 @@ public class BPELMultipageEditorPart extends MultiPageEditorPart
 	public CommandStack getCommandStack() {
 		return getEditDomain().getCommandStack();
 	}
+
+	protected int getDefaultPageTypeIndex() {
+		int pageIndex = DESIGN_PAGE_INDEX;
+		if (BPELUIPlugin.getPlugin().getDefaultPage().equals(IBPELUIConstants.SOURCE_PAGE)) {
+			pageIndex = SOURCE_PAGE_INDEX;
+		}
+		return pageIndex;
+	}
+
 	
 	/**
 	 * Returns the design viewer
@@ -973,6 +997,11 @@ public class BPELMultipageEditorPart extends MultiPageEditorPart
 		fDesignViewer.getTrayViewer().setContents(getProcess());
 	}
 	
+	protected void pageChange(int newPageIndex) {
+		currentPage = newPageIndex;
+		super.pageChange(newPageIndex);
+	}
+
 
 	/**
 	 * Sets the EditDomain for this EditorPart.

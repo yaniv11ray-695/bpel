@@ -73,6 +73,19 @@ public class BPELUIPlugin extends AbstractUIPlugin {
 		return getPlugin();
 	}
 
+	public String getDefaultPage() {
+		return getPreferenceStore().getString(IBPELUIConstants.DEFAULT_EDITOR_PAGE);
+	}
+
+	/**
+	 * setDefaultPage
+	 * Set the default page to open when the editor starts. 
+	 * @param page
+	 */
+	public void setDefaultPage(String page) {
+		getPreferenceStore().setValue(IBPELUIConstants.DEFAULT_EDITOR_PAGE, page);
+	}
+
 	/**
 	 * Creates an image descriptor and places it in the image registry.
 	 */
