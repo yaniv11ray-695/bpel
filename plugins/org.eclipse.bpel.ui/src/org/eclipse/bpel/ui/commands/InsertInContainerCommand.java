@@ -10,6 +10,8 @@
  *******************************************************************************/
 package org.eclipse.bpel.ui.commands;
 
+import org.eclipse.bpel.model.Activity;
+import org.eclipse.bpel.model.resource.BPELResource;
 import org.eclipse.bpel.ui.Messages;
 import org.eclipse.bpel.ui.adapters.IContainer;
 import org.eclipse.bpel.ui.adapters.ILabeledElement;
@@ -68,10 +70,11 @@ public class InsertInContainerCommand extends AutoUndoCommand {
 	    	beforeElement = org.eclipse.bpel.ui.util.BPELEditorUtil.getInstance().getElementForObject(before);
 	    }
 	    
-	    MyBPELWriter writer = new MyBPELWriter((org.eclipse.bpel.model.resource.BPELResource)(parent.eResource()),
+	    MyBPELWriter writer = new MyBPELWriter((BPELResource)(parent.eResource()),
 	    										parentElement.getOwnerDocument());
 
-	    Element childElement = writer.activity2XML(((org.eclipse.bpel.model.Activity)child));
+	    Element childElement = writer.activity2XML(((Activity)child));
+	    ((Activity)child).setElement(childElement);
 
 	    parentElement.insertBefore(childElement, beforeElement);
 	}
