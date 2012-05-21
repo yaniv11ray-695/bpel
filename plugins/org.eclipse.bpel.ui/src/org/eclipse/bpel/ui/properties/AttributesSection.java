@@ -39,41 +39,42 @@ import org.eclipse.ui.PlatformUI;
  * Details section for attributes of a Process
  */
 public class AttributesSection extends BPELPropertySection {
-	
+
 	protected Combo fExpressionLanguageCombo;
 	protected Combo fQueryLanguageCombo;
-	
+
 	protected ComboViewer fExpressionLanguageViewer;
 	protected ComboViewer fQueryLanguageViewer;
-	
+
 	protected EditController fExpressionLanguageController;
 	protected EditController fQueryLanguageController;
-	
+
 	protected IValue fContext;
-	
-	 
+
+
 	@Override
 	protected void basicSetInput(EObject input) {
 		saveUserContextToInput() ;
 		super.basicSetInput(input);
 		restoreUserContextFromInput() ;
-		
+
 		/** We assume it is Process */
-		fQueryLanguageController.setInput(input);
-		fExpressionLanguageController.setInput(input);	
+		this.fQueryLanguageController.setInput(input);
+		this.fExpressionLanguageController.setInput(input);
 	}
-	
+
 	class ExpressionEditorDescriptorIValue extends DelegateIValue {
 		ExpressionEditorDescriptorIValue ( IValue arg ) {
 			super (arg);
-		}		
+		}
 		/**
 		 * @see org.eclipse.bpel.common.ui.details.DelegateIValue#get()
 		 */
 		@Override
 		public Object get() {
-			String result = (String) fDelegate.get();
+			String result = (String) this.fDelegate.get();
 			return result != null ? BPELUIRegistry.getInstance().getExpressionEditorDescriptor( result ) : null;
+			// returns an ExpressionEditorDescriptor
 		}
 
 		/**
@@ -82,85 +83,85 @@ public class AttributesSection extends BPELPropertySection {
 		@Override
 		public void set (Object object) {
 			ExpressionEditorDescriptor eed = (ExpressionEditorDescriptor) object;
-			fDelegate.set( eed != null ? eed.getExpressionLanguage() : null );
-		}		
+			this.fDelegate.set( eed != null ? eed.getExpressionLanguage() : null );
+		}
 	}
 	protected void createChangeTrackers() {
-		fExpressionLanguageController = createEditController();
-		fExpressionLanguageController.setFeature(BPELPackage.eINSTANCE.getProcess_ExpressionLanguage());
-		fExpressionLanguageController.setViewIValue(new ViewerIValue ( fExpressionLanguageViewer ) );
-		fExpressionLanguageController.setModeIValue(new ExpressionEditorDescriptorIValue ( 
-				fExpressionLanguageController.getModelIValue() ));
-		
-		fExpressionLanguageController.startListeningTo(fExpressionLanguageCombo) ;
+		this.fExpressionLanguageController = createEditController();
+		this.fExpressionLanguageController.setFeature(BPELPackage.eINSTANCE.getProcess_ExpressionLanguage());
+		this.fExpressionLanguageController.setViewIValue(new ViewerIValue ( this.fExpressionLanguageViewer ) );
+		this.fExpressionLanguageController.setModeIValue(new ExpressionEditorDescriptorIValue (
+				this.fExpressionLanguageController.getModelIValue() ));
 
-		fQueryLanguageController = createEditController();
-		fQueryLanguageController.setFeature(BPELPackage.eINSTANCE.getProcess_QueryLanguage() );
-		fQueryLanguageController.setViewIValue(new ViewerIValue ( fQueryLanguageViewer ));
-		fQueryLanguageController.setModeIValue(new ExpressionEditorDescriptorIValue ( 
-				fQueryLanguageController.getModelIValue() ));
-		fQueryLanguageController.startListeningTo(fQueryLanguageCombo) ;
+		this.fExpressionLanguageController.startListeningTo(this.fExpressionLanguageCombo) ;
+
+		this.fQueryLanguageController = createEditController();
+		this.fQueryLanguageController.setFeature(BPELPackage.eINSTANCE.getProcess_QueryLanguage() );
+		this.fQueryLanguageController.setViewIValue(new ViewerIValue ( this.fQueryLanguageViewer ));
+		this.fQueryLanguageController.setModeIValue(new ExpressionEditorDescriptorIValue (
+				this.fQueryLanguageController.getModelIValue() ));
+		this.fQueryLanguageController.startListeningTo(this.fQueryLanguageCombo) ;
 	}
 
 	@SuppressWarnings("nls")
 	protected void createAttributesWidgets(Composite composite) {
 		FlatFormData data;
 
-		Label expressionLanguageLabel = fWidgetFactory.createLabel(composite, Messages.AttributesDetails_Expression_Language__2);
-		fExpressionLanguageCombo = new Combo(composite,SWT.FLAT | SWT.READ_ONLY );
-		fWidgetFactory.adapt(fExpressionLanguageCombo);		
-		fExpressionLanguageCombo.setData(FocusContext.NAME,"expressionLanguage");
-		
+		Label expressionLanguageLabel = this.fWidgetFactory.createLabel(composite, Messages.AttributesDetails_Expression_Language__2);
+		this.fExpressionLanguageCombo = new Combo(composite,SWT.FLAT | SWT.READ_ONLY );
+		this.fWidgetFactory.adapt(this.fExpressionLanguageCombo);
+		this.fExpressionLanguageCombo.setData(FocusContext.NAME,"expressionLanguage");
+
 		// Expression language combo layout
-		fExpressionLanguageViewer = new ComboViewer(fExpressionLanguageCombo);
+		this.fExpressionLanguageViewer = new ComboViewer(this.fExpressionLanguageCombo);
 		data = new FlatFormData();
 		data.left = new FlatFormAttachment(0, BPELUtil.calculateLabelWidth(expressionLanguageLabel, STANDARD_LABEL_WIDTH_LRG));
 		data.right = new FlatFormAttachment(100, (-2) * IDetailsAreaConstants.HSPACE );
 		data.top = new FlatFormAttachment(0, IDetailsAreaConstants.VSPACE);
-		fExpressionLanguageCombo.setLayoutData(data);
+		this.fExpressionLanguageCombo.setLayoutData(data);
 
-		fExpressionLanguageViewer.setContentProvider(new ExpressionEditorDescriptorContentProvider());
-		fExpressionLanguageViewer.setLabelProvider(new ExpressionEditorDescriptorLabelProvider());
-		fExpressionLanguageViewer.setSorter(ModelViewerSorter.getInstance());
+		this.fExpressionLanguageViewer.setContentProvider(new ExpressionEditorDescriptorContentProvider());
+		this.fExpressionLanguageViewer.setLabelProvider(new ExpressionEditorDescriptorLabelProvider());
+		this.fExpressionLanguageViewer.setSorter(ModelViewerSorter.getInstance());
 
 		// Expression language label layout
 		data = new FlatFormData();
 		data.left = new FlatFormAttachment(0, 0);
-		data.right = new FlatFormAttachment(fExpressionLanguageCombo, -IDetailsAreaConstants.HSPACE);
-		data.top = new FlatFormAttachment(fExpressionLanguageCombo, 0, SWT.CENTER);
+		data.right = new FlatFormAttachment(this.fExpressionLanguageCombo, -IDetailsAreaConstants.HSPACE);
+		data.top = new FlatFormAttachment(this.fExpressionLanguageCombo, 0, SWT.CENTER);
 		expressionLanguageLabel.setLayoutData(data);
 
-		fExpressionLanguageViewer.setInput(new Object());
-		
-		Label queryLanguageLabel = fWidgetFactory.createLabel(composite, Messages.AttributesDetails_Query_Language__2);
-		fQueryLanguageCombo = new Combo(composite,SWT.FLAT | SWT.READ_ONLY );
-		fWidgetFactory.adapt( fQueryLanguageCombo );		
-		fQueryLanguageCombo.setData(FocusContext.NAME,"queryLanguage");
-		
+		this.fExpressionLanguageViewer.setInput(new Object());
+
+		Label queryLanguageLabel = this.fWidgetFactory.createLabel(composite, Messages.AttributesDetails_Query_Language__2);
+		this.fQueryLanguageCombo = new Combo(composite,SWT.FLAT | SWT.READ_ONLY );
+		this.fWidgetFactory.adapt( this.fQueryLanguageCombo );
+		this.fQueryLanguageCombo.setData(FocusContext.NAME,"queryLanguage");
+
 		// Query language combo layout
-		fQueryLanguageViewer = new ComboViewer(fQueryLanguageCombo);
+		this.fQueryLanguageViewer = new ComboViewer(this.fQueryLanguageCombo);
 		data = new FlatFormData();
 		data.left = new FlatFormAttachment(0, BPELUtil.calculateLabelWidth(queryLanguageLabel, STANDARD_LABEL_WIDTH_LRG));
 		data.right = new FlatFormAttachment(100, (-2) * IDetailsAreaConstants.HSPACE );
-		data.top = new FlatFormAttachment(fExpressionLanguageCombo, IDetailsAreaConstants.VSPACE);
-		fQueryLanguageCombo.setLayoutData(data);
+		data.top = new FlatFormAttachment(this.fExpressionLanguageCombo, IDetailsAreaConstants.VSPACE);
+		this.fQueryLanguageCombo.setLayoutData(data);
 
-		fQueryLanguageViewer.setLabelProvider(new ExpressionEditorDescriptorLabelProvider());
-		fQueryLanguageViewer.setContentProvider(new ExpressionEditorDescriptorContentProvider());
-		fQueryLanguageViewer.setSorter(ModelViewerSorter.getInstance());
+		this.fQueryLanguageViewer.setLabelProvider(new ExpressionEditorDescriptorLabelProvider());
+		this.fQueryLanguageViewer.setContentProvider(new ExpressionEditorDescriptorContentProvider());
+		this.fQueryLanguageViewer.setSorter(ModelViewerSorter.getInstance());
 //		queryLanguageViewer.addFilter(new ExpressionLanguageFilter(new String[0]));
 
 		// Query language label layout
 		data = new FlatFormData();
 		data.left = new FlatFormAttachment(0, 0);
-		data.right = new FlatFormAttachment(fQueryLanguageCombo, -IDetailsAreaConstants.HSPACE);
-		data.top = new FlatFormAttachment(fQueryLanguageCombo, 0, SWT.CENTER);
+		data.right = new FlatFormAttachment(this.fQueryLanguageCombo, -IDetailsAreaConstants.HSPACE);
+		data.top = new FlatFormAttachment(this.fQueryLanguageCombo, 0, SWT.CENTER);
 		queryLanguageLabel.setLayoutData(data);
 
-		fQueryLanguageViewer.setInput(new Object());
-		
-		
-		fContext = new FocusContext( fExpressionLanguageCombo, fQueryLanguageCombo );
+		this.fQueryLanguageViewer.setInput(new Object());
+
+
+		this.fContext = new FocusContext( this.fExpressionLanguageCombo, this.fQueryLanguageCombo );
 	}
 
 	@Override
@@ -178,14 +179,14 @@ public class AttributesSection extends BPELPropertySection {
 	 */
 	@Override
 	public Object getUserContext() {
-		return fContext.get();
+		return this.fContext.get();
 	}
-	
+
 	/**
 	 * @see org.eclipse.bpel.ui.properties.BPELPropertySection#restoreUserContext(java.lang.Object)
 	 */
 	@Override
 	public void restoreUserContext(Object userContext) {
-		fContext.set(userContext);
+		this.fContext.set(userContext);
 	}
 }
