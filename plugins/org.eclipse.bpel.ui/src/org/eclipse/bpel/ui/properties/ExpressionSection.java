@@ -10,156 +10,68 @@
  *******************************************************************************/
 package org.eclipse.bpel.ui.properties;
 
-import org.eclipse.bpel.common.ui.details.IOngoingChange;
-import org.eclipse.bpel.common.ui.editmodel.AbstractEditModelCommand;
-import org.eclipse.bpel.common.ui.flatui.FlatFormAttachment;
-import org.eclipse.bpel.common.ui.flatui.FlatFormData;
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import org.eclipse.bpel.model.BPELFactory;
 import org.eclipse.bpel.model.Expression;
 import org.eclipse.bpel.ui.IBPELUIConstants;
 import org.eclipse.bpel.ui.commands.CompoundCommand;
 import org.eclipse.bpel.ui.commands.SetCommand;
-import org.eclipse.bpel.ui.editors.xpath.XPathTextEditor;
+import org.eclipse.bpel.ui.editors.xpath.ColorManager;
+import org.eclipse.bpel.ui.editors.xpath.XPathSourceViewerConfiguration;
 import org.eclipse.bpel.ui.expressions.IEditorConstants;
-import org.eclipse.bpel.ui.util.BatchedMultiObjectAdapter;
-import org.eclipse.bpel.ui.util.MultiObjectAdapter;
 import org.eclipse.core.resources.IMarker;
-import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.emf.common.notify.Notification;
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.EStructuralFeature;
-import org.eclipse.emf.ecore.resource.Resource;
-import org.eclipse.gef.commands.Command;
+import org.eclipse.jface.text.Document;
+import org.eclipse.jface.text.IDocument;
+import org.eclipse.jface.text.source.ISourceViewer;
+import org.eclipse.jface.text.source.SourceViewer;
+import org.eclipse.jface.text.source.VerticalRuler;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.custom.StyledText;
+import org.eclipse.swt.events.ModifyEvent;
+import org.eclipse.swt.events.ModifyListener;
 import org.eclipse.swt.graphics.Font;
 import org.eclipse.swt.graphics.FontData;
+import org.eclipse.swt.layout.FillLayout;
+import org.eclipse.swt.layout.GridData;
+import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
-import org.eclipse.ui.ide.IGotoMarker;
 
 /**
  * Base class with some shared behavior for details panes that edit a XPath expression.
  * @author Michal Chmielewski (michal.chmielewski@oracle.com)
- * @author Vincent Zurczak - EBM WebSourcing (Merge this class with TextSection and simplify it by only using the XPath editor)
+ * @author Vincent Zurczak - EBM WebSourcing (Merge this class with TextSection, simplify it by only using the XPath viewer)
+ * FIXME: There are probably cases that are not handled correctly. To be fixed on the fly.
+ * FIXME: Undo is not supported correctly.
  */
 public abstract class ExpressionSection extends BPELPropertySection {
 
 	protected Composite fEditorArea ;
-	protected XPathTextEditor fEditor;
+	protected StyledText expressionText;
 
 	protected Font boldFont;
 	protected String title;
 	protected Label titleLabel;
 
 	protected EStructuralFeature fStructuralFeature;
-	protected IOngoingChange change;
+	protected AtomicBoolean modelUpdate = new AtomicBoolean( false );
 
 
-	public ExpressionSection() {
-
-		this.change = new IOngoingChange() {
-			public String getLabel() {
-				return getCommandLabel();
-			}
-			public Command createApplyCommand() {
-				if (ExpressionSection.this.fEditor == null) {
-					return null;
-				}
-
-				CompoundCommand result = new CompoundCommand();
-				Expression exp = BPELFactory.eINSTANCE.createCondition();
-				exp.setBody( ExpressionSection.this.fEditor.getContents());
-				result.add( new SetCommand( getExpressionTarget(), getExpression4Target( exp ) , getStructuralFeature()));
-
-				// refresh the editor
-				result.add( new AbstractEditModelCommand() {
-					@Override
-					public void execute() {
-						if (ExpressionSection.this.fEditor != null) {
-							ExpressionSection.this.fEditor.markAsClean();
-						}
-					}
-					// TODO: is this correct?
-					@Override
-					public Resource[] getResources() {
-						return new Resource[ 0 ];
-					}
-					@Override
-					public Resource[] getModifiedResources() {
-						return new Resource[ 0 ];
-					}
-				});
-
-				return wrapInShowContextCommand(result);
-			}
-
-			public void restoreOldState() {
-				// updateWidgets();
-			}
-		};
-	}
-
-
-	protected void notifyEditorChanged() {
-		// TODO: why is this method being called before createClient() has finished
-		// when a BuiltInExpressionEditor was selected in the model?
-		if (this.change != null) {
-			getCommandFramework().notifyChangeInProgress(this.change);
-		}
-	}
-
-
-	/**
-	 * @see org.eclipse.bpel.ui.properties.BPELPropertySection#aboutToBeHidden()
+	/*
+	 * (non-Javadoc)
+	 * @see org.eclipse.bpel.ui.properties.BPELPropertySection
+	 * #addAllAdapters()
 	 */
-	@Override
-	public void aboutToBeHidden() {
-		super.aboutToBeHidden();
-		if (this.change != null)
-			getCommandFramework().notifyChangeDone(this.change);
-
-		// if (this.fEditor != null) this.fEditor.aboutToBeHidden();
-	}
-
-
 	@Override
 	protected void addAllAdapters() {
 		super.addAllAdapters();
 		Expression e = getExprFromModel();
-		if (e != null)
+		if( e != null && this.fAdapters.length > 0 )
 			this.fAdapters[0].addToObject(e);
-	}
-
-
-	@Override
-	protected MultiObjectAdapter[] createAdapters() {
-
-		MultiObjectAdapter adapter = new BatchedMultiObjectAdapter() {
-
-			boolean needRefresh = false;
-
-			@Override
-			public void notify (Notification n) {
-
-				if (markersHaveChanged(n)) {
-					updateMarkers();
-					return ;
-				}
-				this.needRefresh = this.needRefresh || isBodyAffected(n);
-				refreshAdapters();
-			}
-
-			@Override
-			public void finish() {
-				if (this.needRefresh) {
-					// updateWidgets();
-				}
-
-				this.needRefresh = false;
-			}
-		};
-
-		return new MultiObjectAdapter[] { adapter };
 	}
 
 
@@ -173,12 +85,22 @@ public abstract class ExpressionSection extends BPELPropertySection {
 	 *  be based on the model.
 	 */
 	@Override
-	protected void basicSetInput (EObject newInput) {
+	protected void basicSetInput( EObject newInput ) {
 
+		this.modelUpdate.set( true );
 		super.basicSetInput(newInput);
 
 		/** Figure out based in the input, what EMF structural feature we are setting */
 		this.fStructuralFeature = getStructuralFeature( newInput );
+
+		Expression exp = getExprFromModel();
+		Object o = exp != null ? exp.getBody() : null;
+		String content = o == null ? "" : String.valueOf( o );
+		this.expressionText.setText( content );
+		this.expressionText.setSelection( content.length());
+		this.expressionText.setFocus();
+
+		this.modelUpdate.set( false );
 	}
 
 
@@ -192,10 +114,14 @@ public abstract class ExpressionSection extends BPELPropertySection {
 	 *
 	 * @return
 	 */
-	protected EObject getExpressionTarget () {
+	protected EObject getExpressionTarget() {
 		return getInput();
 	}
 
+
+	/**
+	 * @return
+	 */
 	protected String getExpressionType() {
 		return IEditorConstants.ET_ANY ;
 	}
@@ -205,7 +131,7 @@ public abstract class ExpressionSection extends BPELPropertySection {
 	 * Return the previously computed structural feature of the input object.
 	 * @return
 	 */
-	protected final EStructuralFeature getStructuralFeature() {
+	protected EStructuralFeature getStructuralFeature() {
 		return this.fStructuralFeature;
 	}
 
@@ -218,29 +144,27 @@ public abstract class ExpressionSection extends BPELPropertySection {
 
 
 	/**
-	 * Return the actual namespace from the expression, or null if not set.
+	 * @return
 	 */
-	protected String getExpressionLanguageFromModel() {
-		Expression expression = getExprFromModel();
-		return expression != null ? expression.getExpressionLanguage() : null;
-	}
-
-
-
 	protected Expression getExprFromModel() {
 
+		Expression result = null;
 		EObject target = getExpressionTarget();
-		if (target != null) {
-			Object result = target.eGet( getStructuralFeature());
-			if (result instanceof Expression) {
-				return (Expression) result;
-			}
+		if( target != null ) {
+			Object o = target.eGet( getStructuralFeature());
+			if( o instanceof Expression )
+				result = (Expression) o;
 		}
-		return null;
+
+		return result;
 	}
 
 
-	protected Expression getExpression4Target ( Expression expression ) {
+	/**
+	 * @param expression
+	 * @return
+	 */
+	protected Expression getExpression4Target( Expression expression ) {
 		return expression;
 	}
 
@@ -286,15 +210,17 @@ public abstract class ExpressionSection extends BPELPropertySection {
 	}
 
 
-	/**
-	 * Create the client area. This is just done once.
+	/*
+	 * (non-Javadoc)
+	 * @see org.eclipse.bpel.ui.properties.BPELPropertySection
+	 * #createClient(org.eclipse.swt.widgets.Composite)
 	 */
-
 	@Override
 	protected void createClient( Composite parent ) {
 
 		// The top
-		this.fEditorArea =  createFlatFormComposite( parent );
+		this.fEditorArea = getWidgetFactory().createComposite( parent );
+		this.fEditorArea.setLayout( new GridLayout());
 		if( this.title != null ) {
 
 			// The font
@@ -303,18 +229,51 @@ public abstract class ExpressionSection extends BPELPropertySection {
 			this.boldFont = new Font( parent.getDisplay(), fontData[ 0 ]);
 
 			// The title
-			FlatFormData data;
 			this.titleLabel = this.fWidgetFactory.createLabel( this.fEditorArea, this.title);
 			this.titleLabel.setFont(this.boldFont);
-			data = new FlatFormData();
-			data.left = new FlatFormAttachment(0, 0);
-			data.top = new FlatFormAttachment(0, 0);
-			data.right = new FlatFormAttachment(100, 0);
-			this.titleLabel.setLayoutData(data);
 		}
 
 		// The expression editor
-		this.fEditor.createPartControl( this.fEditorArea );
+		getWidgetFactory().createLabel( this.fEditorArea, "Edit the associated XPath Expression." );
+		Composite editor = getWidgetFactory().createComposite( this.fEditorArea, SWT.BORDER );
+		editor.setLayout( new FillLayout ());
+
+		GridData layoutData = new GridData( GridData.FILL_BOTH );
+		editor.setLayoutData( layoutData );
+
+		int style = SWT.V_SCROLL | SWT.MULTI | SWT.BORDER;
+		final ISourceViewer viewer = new SourceViewer( editor, new VerticalRuler( 0 ), style );
+		ColorManager cManager = new ColorManager ();
+		viewer.configure( new XPathSourceViewerConfiguration( cManager ));
+
+		viewer.getTextWidget().setLayoutData( new GridData( GridData.FILL_BOTH ));
+		IDocument document = new Document( "" );
+		viewer.setDocument( document );
+
+		this.expressionText = viewer.getTextWidget();
+		this.expressionText.addModifyListener( new ModifyListener() {
+			@Override
+			public void modifyText( ModifyEvent e ) {
+				saveExpressionToModel();
+			}
+		});
+	}
+
+
+	/**
+	 * Saves the expression to the model.
+	 */
+	protected void saveExpressionToModel() {
+
+		if( this.modelUpdate.get())
+			return;
+
+		CompoundCommand result = new CompoundCommand();
+		Expression exp = BPELFactory.eINSTANCE.createCondition();
+		exp.setBody( this.expressionText != null ? this.expressionText.getText().trim() : "" );
+		result.add( new SetCommand( getExpressionTarget(), getExpression4Target( exp ) , getStructuralFeature()));
+
+		getCommandFramework().execute( result );
 	}
 
 
@@ -326,34 +285,9 @@ public abstract class ExpressionSection extends BPELPropertySection {
 	@Override
 	public void dispose() {
 
-		this.fEditor.dispose();
 		if( this.boldFont != null && ! this.boldFont.isDisposed())
 			this.boldFont.dispose();
 
 		super.dispose();
-	}
-
-
-	/*
-	 * (non-Javadoc)
-	 * @see org.eclipse.bpel.ui.properties.BPELPropertySection
-	 * #updateMarkers()
-	 */
-	@Override
-	protected void updateMarkers () {
-		// TODO: implement it
-	}
-
-
-	/*
-	 * (non-Javadoc)
-	 * @see org.eclipse.bpel.ui.properties.BPELPropertySection
-	 * #gotoMarker(org.eclipse.core.resources.IMarker)
-	 */
-	@Override
-	public void gotoMarker( IMarker marker ) {
-		IGotoMarker gotoMarker = (IGotoMarker) ((IAdaptable) this.fEditor).getAdapter( IGotoMarker.class );
-		if( gotoMarker != null )
-			gotoMarker.gotoMarker( marker );
 	}
 }

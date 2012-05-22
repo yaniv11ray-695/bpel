@@ -16,7 +16,6 @@ import org.eclipse.bpel.ui.preferences.BPELPreferencePage;
 import org.eclipse.bpel.ui.preferences.WSILPreferencePage;
 import org.eclipse.bpel.ui.properties.ActionImplementationSection;
 import org.eclipse.bpel.ui.properties.AssignImplSection;
-import org.eclipse.bpel.ui.properties.AttributesSection;
 import org.eclipse.bpel.ui.properties.CompensateScopeSection;
 import org.eclipse.bpel.ui.properties.CorrSetImplSection;
 import org.eclipse.bpel.ui.properties.CorrelationSection;
@@ -95,8 +94,6 @@ public interface IHelpContextIds {
   public static final String PROPERTY_PAGE_NAMESPACE = PREFIX + "property_namespace"; //$NON-NLS-1$
 	/** Context ID for the {@link RepeatingAlarmConditionSection}. */
 	public static final String PROPERTY_PAGE_REPEAT_ALARM = PREFIX + "property_repeat_alarm"; //$NON-NLS-1$
-	/** Context ID for the {@link AttributesSection}. */
-	public static final String PROPERTY_PAGE_ATTRIBUTES = PREFIX + "property_attributes"; //$NON-NLS-1$
 	/** Context ID for the {@link ValidateSection} and {@link ValidateVariablesSection}. */
 	public static final String PROPERTY_PAGE_VALIDATE_DETAILS = PREFIX + "property_validate"; //$NON-NLS-1$
   /** Context ID for the {@link DocumentationSection}. */

@@ -271,9 +271,8 @@ public class XPathTextEditor extends TextEditor {
 		}
 	}
 
-	/*** Private Classes */
-
-	class BracketInserter implements VerifyKeyListener  {
+	// VZ: make this class public and static
+	public class BracketInserter implements VerifyKeyListener  {
 
 		private boolean fCloseBrackets = true;
 		private boolean fCloseStrings  = true;

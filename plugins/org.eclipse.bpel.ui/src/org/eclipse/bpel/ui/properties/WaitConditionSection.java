@@ -22,11 +22,13 @@ import org.eclipse.bpel.ui.Messages;
 import org.eclipse.bpel.ui.commands.CompoundCommand;
 import org.eclipse.bpel.ui.commands.SetCommand;
 import org.eclipse.bpel.ui.expressions.IEditorConstants;
-import org.eclipse.core.resources.IMarker;
 import org.eclipse.emf.ecore.EClass;
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.EStructuralFeature;
-import org.eclipse.gef.commands.Command;
+import org.eclipse.swt.SWT;
+import org.eclipse.swt.events.SelectionEvent;
+import org.eclipse.swt.events.SelectionListener;
+import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.ui.PlatformUI;
@@ -36,16 +38,73 @@ import org.eclipse.ui.PlatformUI;
  * <p>
  * This is a little more involved, because "until" and "for" are mutually exclusive in the model.
  * </p>
+ * TODO: review and complete this class (VZ)
  */
-public class WaitConditionSection extends RadioChoiceExpressionSection {
+public class WaitConditionSection extends ExpressionSection {
+
+	protected Button[] radioButtons;
+	protected int fButtonCount ;
+	protected int fCurrentButtonIndex;
 
 	@Override
-	protected String[] getButtonLabels() {
-		return gLabels;
+	protected String getExpressionType() {
+		return getButtonExprType(this.fCurrentButtonIndex);
+	}
+
+	/**
+	 * Change the input.
+	 */
+	@Override
+	protected void basicSetInput(EObject newInput) {
+
+		super.basicSetInput(newInput);
+		this.fCurrentButtonIndex = getButtonIndexFromModel();
+		updateRadioButtonWidgets();
 	}
 
 
-	@Override
+	/**
+	 * Update the Radio button widgets according to the state of the model.
+	 */
+	protected void updateRadioButtonWidgets() {
+
+		this.fCurrentButtonIndex = getButtonIndexFromModel();
+		if (this.fCurrentButtonIndex >= 0) this.radioButtons[this.fCurrentButtonIndex].setSelection(true);
+		for (int i = 0; i<this.radioButtons.length; i++) {
+			if (i != this.fCurrentButtonIndex)
+				this.radioButtons[i].setSelection(false);
+		}
+	}
+
+	/**
+	 * Creates the radio button widgets.
+	 * @param parent
+	 */
+	protected void createRadioButtonWidgets(Composite parent) {
+
+		this.fButtonCount = gLabels.length;
+
+		Composite radioComposite = getWidgetFactory().createComposite( parent );
+		radioComposite.setLayout( new GridLayout( 2, true ));
+
+		this.radioButtons = new Button[ this.fButtonCount ];
+		for(int i = 0; i < this.fButtonCount; i++) {
+			this.radioButtons[i] = this.fWidgetFactory.createButton(radioComposite, gLabels[i], SWT.RADIO);
+			this.radioButtons[i].addSelectionListener(new SelectionListener() {
+				public void widgetSelected (SelectionEvent e) {
+					// TODO: store the information
+				}
+				public void widgetDefaultSelected(SelectionEvent e) { }
+			});
+		}
+	}
+
+	protected void createClient(Composite parent) {
+		super.createClient(parent);
+		createRadioButtonWidgets( parent );
+		PlatformUI.getWorkbench().getHelpSystem().setHelp( parent, IHelpContextIds.PROPERTY_PAGE_WAIT );
+	}
+
 	protected String getButtonExprType (int buttonIndex) {
 		if (buttonIndex == 0) {
 			return IEditorConstants.ET_DATETIME;
@@ -54,20 +113,6 @@ public class WaitConditionSection extends RadioChoiceExpressionSection {
 			return IEditorConstants.ET_DURATION;
 		}
 		throw new IllegalArgumentException();
-	}
-
-
-	@Override
-	protected void radioButtonSelected (int index, Button button) {
-
-		if (button.getSelection() == false) {
-			return ;
-		}
-
-		/** Mark the current radio button selection */
-		this.fCurrentButtonIndex = index;
-
-		runCommand(newStoreToModelCommand( getDefaultBody(editorLanguage,getButtonExprType(index) ) ) ) ;
 	}
 
 
@@ -89,7 +134,6 @@ public class WaitConditionSection extends RadioChoiceExpressionSection {
 	 * Button 0 is for "until" (date time)
 	 * Button 1 is for "for"   (duration)
 	 */
-
 	static Map<EClass, EStructuralFeature[]> CLASS2FEATURES  = new HashMap<EClass, EStructuralFeature[]>();
 	static {
 		CLASS2FEATURES.put( BPELPackage.eINSTANCE.getWait() ,
@@ -123,8 +167,6 @@ public class WaitConditionSection extends RadioChoiceExpressionSection {
 		return null;
 	}
 
-	@SuppressWarnings("nls")
-	@Override
 	protected int getButtonIndexFromModel() {
 		EObject input = getInput();
 		EStructuralFeature feature = getStructuralFeature(input);
@@ -137,52 +179,31 @@ public class WaitConditionSection extends RadioChoiceExpressionSection {
 		return 1;
 	}
 
-
-	@Override
 	protected boolean isValidClientUseType (String useType) {
 		return IBPELUIConstants.USE_TYPE_DEADLINE_CONDITION.equals(useType)
 			|| IBPELUIConstants.USE_TYPE_DURATION_CONDITION.equals(useType);
 	}
 
-	@Override
-	protected void createClient (Composite parent) {
-		super.createClient(parent);
-
-		PlatformUI.getWorkbench().getHelpSystem().setHelp(
-			this.fParentComposite, IHelpContextIds.PROPERTY_PAGE_WAIT);
-	}
-
-
-	/**
-	 * Return true if the marker is valid for this section.
-	 * @return true if so, false otherwise.
-	 */
-
-	@Override
-	public boolean isValidMarker (IMarker marker ) {
-		return false;
-	}
 
 	/**
 	 * We override this parameter-less method since the feature changes as the button selection changes.
 	 * The target of this structural feature (for the SetCommand model mutation change) is the target itself,
 	 * that is the Wait activity.
 	 */
-
 	@Override
-	protected EStructuralFeature getStructuralFeature (  ) {
+	protected EStructuralFeature getStructuralFeature() {
 		return getStructuralFeature ( this.fCurrentButtonIndex );
 	}
 
-	protected EStructuralFeature getStructuralFeature ( int index ) {
-		EStructuralFeature features []  = CLASS2FEATURES.get( getInput().eClass() );
+	protected EStructuralFeature getStructuralFeature( int index ) {
+		EStructuralFeature features []  = CLASS2FEATURES.get( getInput().eClass());
 		assert (features != null) : "Features cannot be null";
 		return features[ index ];
 	}
 
 
 	@Override
-	protected EStructuralFeature getStructuralFeature ( EObject eObj ) {
+	protected EStructuralFeature getStructuralFeature( EObject eObj ) {
 
 		EStructuralFeature features [] = CLASS2FEATURES.get(eObj.eClass() );
 		for (EStructuralFeature f : features) {
@@ -192,49 +213,33 @@ public class WaitConditionSection extends RadioChoiceExpressionSection {
 			}
 		}
 
-		return super.getStructuralFeature(eObj);
+		return null;
 	}
 
+
 	/**
-	 * Here we have to set the feature that we are setting and unset all
-	 * the other mutually exclusive features.
-	 *
-	 *
+	 * Saves the expression to the model.
 	 */
-	@Override
-	protected Command newStoreToModelCommand (Object body) {
+	protected void saveExpressionToModel() {
 
-		CompoundCommand result = new CompoundCommand();
-		Expression oldExp = getExprFromModel();
+		if( this.modelUpdate.get())
+			return;
 
-		Expression exp = BPELFactory.eINSTANCE.createExpression();
-
-		// Don't set the language, because if the user has changed the
-		// language, a condition would already exist at this point.
-
-		if (oldExp != null) {
-			exp.setExpressionLanguage(oldExp.getExpressionLanguage());
-		}
-		exp.setBody(body);
-
-
-		/** Be nice and unset the features that should not be set. */
-
+		// Usual behavior
 		EStructuralFeature aFeature = getStructuralFeature();
 		EObject target = getExpressionTarget();
 
-		/** Set the feature being edited */
-		result.add (new SetCommand(target, exp, aFeature));
+		CompoundCommand result = new CompoundCommand();
+		Expression exp = BPELFactory.eINSTANCE.createCondition();
+		exp.setBody( this.expressionText != null ? this.expressionText.getText().trim() : "" );
+		result.add( new SetCommand( target, getExpression4Target( exp ) , aFeature ));
 
-		// Unset others, if set
+		// Unset the features that should not be set
 		for (EStructuralFeature feature : CLASS2FEATURES.get( getInput().eClass() ) ) {
-			if (feature.equals(aFeature) || target.eIsSet(feature) == false ) {
-				continue;
-			}
-			result.add( new SetCommand(target,null,feature)) ;
+			if( ! feature.equals( aFeature ) && target.eIsSet(feature))
+				result.add( new SetCommand(target,null,feature)) ;
 		}
 
-		return result;
+		getCommandFramework().execute( result );
 	}
-
 }

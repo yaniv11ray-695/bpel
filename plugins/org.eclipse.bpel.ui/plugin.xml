@@ -222,12 +222,6 @@
            <input type="org.eclipse.bpel.model.Empty"/>
         </propertySection>
         <propertySection
-               tab="org.eclipse.bpel.ui.tabs.details"
-               class="org.eclipse.bpel.ui.properties.AttributesSection"
-               id="org.eclipse.bpel.ui.sections.Attributes">
-            <input type="org.eclipse.bpel.model.Process"/>
-        </propertySection>
-        <propertySection
                tab="org.eclipse.bpel.ui.tabs.description"
                class="org.eclipse.bpel.ui.properties.NameSection"
                id="org.eclipse.bpel.ui.sections.Name">

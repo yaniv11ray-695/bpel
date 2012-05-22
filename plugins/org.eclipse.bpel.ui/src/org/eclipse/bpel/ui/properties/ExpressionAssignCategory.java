@@ -11,17 +11,11 @@
 package org.eclipse.bpel.ui.properties;
 
 import org.eclipse.bpel.model.AbstractAssignBound;
-import org.eclipse.bpel.model.BPELFactory;
 import org.eclipse.bpel.model.BPELPackage;
-import org.eclipse.bpel.model.Expression;
 import org.eclipse.bpel.ui.IBPELUIConstants;
 import org.eclipse.bpel.ui.Messages;
 import org.eclipse.bpel.ui.adapters.IVirtualCopyRuleSide;
-import org.eclipse.bpel.ui.commands.CompoundCommand;
-import org.eclipse.bpel.ui.commands.SetCommand;
 import org.eclipse.bpel.ui.util.BPELUtil;
-import org.eclipse.bpel.ui.util.BatchedMultiObjectAdapter;
-import org.eclipse.bpel.ui.util.MultiObjectAdapter;
 import org.eclipse.emf.common.notify.Notification;
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.EStructuralFeature;
@@ -63,16 +57,21 @@ public class ExpressionAssignCategory extends ExpressionSection implements IAssi
 	}
 
 
-	/**
-	 * @see org.eclipse.bpel.ui.properties.BPELPropertySection#createControls(org.eclipse.swt.widgets.Composite, org.eclipse.ui.views.properties.tabbed.TabbedPropertySheetPage)
+	/*
+	 * (non-Javadoc)
+	 * @see org.eclipse.bpel.ui.properties.BPELPropertySection
+	 * #createControls(org.eclipse.swt.widgets.Composite, org.eclipse.ui.views.properties.tabbed.TabbedPropertySheetPage)
 	 */
 	@Override
 	public void createControls(Composite parent, TabbedPropertySheetPage aTabbedPropertySheetPage) {
 		super.createControls(parent, aTabbedPropertySheetPage);
 		this.fParent = parent;
 	}
-	/**
-	 * @see org.eclipse.bpel.ui.properties.IAssignCategory#getComposite()
+
+	/*
+	 * (non-Javadoc)
+	 * @see org.eclipse.bpel.ui.properties.IAssignCategory
+	 * #getComposite()
 	 */
 	public Composite getComposite() {
 		return this.fParent;
@@ -88,41 +87,6 @@ public class ExpressionAssignCategory extends ExpressionSection implements IAssi
 
 	protected boolean isToOrFromAffected(Notification n) {
 		return true;
-	}
-
-
-	@Override
-	protected MultiObjectAdapter[] createAdapters() {
-		MultiObjectAdapter adapter = new BatchedMultiObjectAdapter() {
-			boolean needRefresh = false;
-			boolean toOrFromAffected = false;
-			@Override
-			public void notify(Notification n) {
-				this.needRefresh = isBodyAffected(n);
-
-				// if (isBodyAffected(n) && !isExecutingStoreCommand) needRefresh = true;
-				if (isToOrFromAffected(n)) {
-					this.toOrFromAffected = true;
-				}
-				refreshAdapters();
-			}
-			@Override
-			public void finish() {
-				if (this.needRefresh || this.toOrFromAffected) {
-					updateWidgets();
-				}
-				if (this.toOrFromAffected) {
-					updateCategoryWidgets();
-				}
-				this.toOrFromAffected = false;
-				this.needRefresh = false;
-			}
-		};
-		return new MultiObjectAdapter[] { adapter };
-	}
-
-	protected void updateCategoryWidgets() {
-		updateEditor();
 	}
 
 	/**
@@ -152,27 +116,6 @@ public class ExpressionAssignCategory extends ExpressionSection implements IAssi
 	public boolean isCategoryForModel ( EObject aModel ) {
 		IVirtualCopyRuleSide side = BPELUtil.adapt(aModel, IVirtualCopyRuleSide.class);
 		return side != null ? side.getExpression() != null : false;
-	}
-
-
-	@Override
-	protected Command newStoreToModelCommand  (Object body) {
-		CompoundCommand result = new CompoundCommand();
-		// If there is no condition, create one.
-		Expression oldExp = getExprFromModel();
-		Expression exp = BPELFactory.eINSTANCE.createExpression();
-
-		// Don't set the language, because if the user has changed the
-		// language, a condition would already exist at this point.
-		if (oldExp != null) {
-			exp.setExpressionLanguage(oldExp.getExpressionLanguage());
-		}
-		exp.setBody(body);
-		result.add(new SetCommand( getExpressionTarget(), exp, getStructuralFeature() ));
-
-		// VZ: fEditor.addExtraStoreCommands(result);
-
-		return result;
 	}
 
 	/*

@@ -107,7 +107,7 @@ public class EditPropertyAliasDialog extends Dialog {
 		}
 
 		public String getQuery() {
-			return this.fEditor.getContents();
+			return this.expressionText.getText().trim();
 		}
 
 		@Override
