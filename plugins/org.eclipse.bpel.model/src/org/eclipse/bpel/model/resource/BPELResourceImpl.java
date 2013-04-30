@@ -212,7 +212,7 @@ public class BPELResourceImpl extends XMLResourceImpl implements BPELResource {
 			return null;
 	    } catch (RuntimeException e) {
 	    	// TODO: Should log this instead of printing to stderr.
-	        e.printStackTrace();
+//	        e.printStackTrace();
 	        throw e;
 	    }
 	}

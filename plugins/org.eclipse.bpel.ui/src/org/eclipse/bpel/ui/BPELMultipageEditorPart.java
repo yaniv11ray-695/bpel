@@ -1297,7 +1297,7 @@ IGotoMarker/*, CommandStackListener*/ {
 
 		try {
 			markers = file.findMarkers(null, true, IResource.DEPTH_ZERO);
-		} catch (CoreException ex) {
+		} catch (Exception ex) {
 			BPELUIPlugin.log(ex);
 			return;
 		}
@@ -1358,7 +1358,7 @@ IGotoMarker/*, CommandStackListener*/ {
 					continue;
 				}
 				target = resource.getEObject(href);
-			} catch (CoreException ex) {
+			} catch (Exception ex) {
 				continue;
 			}
 			if (target == null) {
