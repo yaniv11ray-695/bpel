@@ -303,7 +303,8 @@ public class TypeSelectorDialog extends BrowseSelectorDialog {
 		if ( getResult().length<2 && this.requireLowerTreeSelection )
 			enabled = false;
 		
-		getOkButton().setEnabled(enabled);
+		if (getOkButton()!=null)
+			getOkButton().setEnabled(enabled);
 	}
 
 	@Override
