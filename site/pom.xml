@@ -51,7 +51,6 @@
 						<artifactId>target-platform-configuration</artifactId>
 						<version>${tycho-version}</version>
 						<configuration>
-							<resolver>p2</resolver>
 							<includePackedArtifacts>true</includePackedArtifacts>
 						</configuration>
 					</plugin>
@@ -122,6 +121,26 @@
 
 					<!-- End of plug-ins -->
 				</plugins>
+
+				<pluginManagement>
+					<plugins>
+						<plugin>
+							<groupId>org.eclipse.tycho</groupId>
+							<artifactId>tycho-packaging-plugin</artifactId>
+							<version>${tycho-version}</version>
+							<configuration>
+								<format>yyyyMMdd-HHmm</format>
+							</configuration>
+						</plugin>
+
+						<plugin>
+							<groupId>org.eclipse.tycho</groupId>
+							<artifactId>tycho-p2-plugin</artifactId>
+							<version>${tycho-version}</version>
+						</plugin>
+					</plugins>
+				</pluginManagement>
+
 			</build>
 		</profile>
 	</profiles>
