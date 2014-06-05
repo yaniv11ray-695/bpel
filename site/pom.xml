@@ -32,9 +32,6 @@
 			</activation>
 			
 			<properties>
-				<staging.directory>/home/data/httpd/download-staging.priv/soa/bpel</staging.directory>
-				<publish.directory>/shared/soa/bpel/${project.version}/${platform.name}</publish.directory>
-				<update.site.directory>${publish.directory}/update-site</update.site.directory>
 				<tycho-version>0.16.0</tycho-version>
 				<tycho-extras-version>${tycho-version}</tycho-extras-version>
 			</properties>
@@ -42,6 +39,24 @@
 			<build>
 				<plugins>
 				
+					<plugin>
+						<groupId>org.eclipse.tycho</groupId>
+						<artifactId>tycho-maven-plugin</artifactId>
+						<version>${tycho-version}</version>
+						<extensions>true</extensions>
+					</plugin>
+
+					<plugin>
+						<groupId>org.eclipse.tycho</groupId>
+						<artifactId>target-platform-configuration</artifactId>
+						<version>${tycho-version}</version>
+						<configuration>
+							<resolver>p2</resolver>
+							<includePackedArtifacts>true</includePackedArtifacts>
+						</configuration>
+					</plugin>
+
+
 					<!-- Pack and sign the update site -->
 					<plugin>
 						<groupId>org.eclipse.tycho.extras</groupId>
@@ -65,12 +80,6 @@
 						<executions>
 							<execution>
 								<id>sign</id>
-								<configuration>
-									<inputFile>${project.build.directory}/site.zip</inputFile>
-									<signerInputDirectory>${staging.directory}</signerInputDirectory>
-									<maxZipChecks>50</maxZipChecks>
-								</configuration>
-								<phase>package</phase>
 								<goals>
 									<goal>sign</goal>
 								</goals>
