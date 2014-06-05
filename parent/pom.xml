@@ -10,12 +10,13 @@
 	</modules>
 
 	<properties>
-		<tychoVersion>0.13.0</tychoVersion>
+		<tycho-version>0.16.0</tycho-version>
+		<tycho-extras-version>${tycho-version}</tycho-extras-version>
 		<BUILD_ALIAS>CI</BUILD_ALIAS>
 		<memoryOptions1>-Xms512m -Xmx1024m -XX:PermSize=256m</memoryOptions1>
 		<memoryOptions2>-XX:MaxPermSize=256m</memoryOptions2>
 		<systemProperties></systemProperties>
-		<platform.name>helios</platform.name>
+		<platform.name>luna</platform.name>
 	</properties>
 
 	<build>
@@ -29,7 +30,7 @@
 			<plugin>
 				<groupId>org.eclipse.tycho</groupId>
 				<artifactId>tycho-packaging-plugin</artifactId>
-				<version>${tychoVersion}</version>
+				<version>${tycho-version}</version>
 				<configuration>
 					<format>'v'yyyyMMdd-HHmm'-${BUILD_ALIAS}'</format>
 					<archiveSite>true</archiveSite>
@@ -39,14 +40,14 @@
 			<plugin>
 				<groupId>org.eclipse.tycho</groupId>
 				<artifactId>tycho-maven-plugin</artifactId>
-				<version>${tychoVersion}</version>
+				<version>${tycho-version}</version>
 				<extensions>true</extensions>
 			</plugin>
 
 			<plugin>
 				<groupId>org.eclipse.tycho</groupId>
 				<artifactId>target-platform-configuration</artifactId>
-				<version>${tychoVersion}</version>
+				<version>${tycho-version}</version>
 				<configuration>
 					<resolver>p2</resolver>
 					<ignoreTychoRepositories>true</ignoreTychoRepositories>
@@ -65,7 +66,7 @@
 			<plugin>
 				<groupId>org.eclipse.tycho</groupId>
 				<artifactId>tycho-surefire-plugin</artifactId>
-				<version>${tychoVersion}</version>
+				<version>${tycho-version}</version>
 				<configuration>
 					<!-- timeout in seconds -->
 					<surefire.timeout>1800</surefire.timeout>
@@ -112,7 +113,7 @@
 			<plugin>
 				<groupId>org.eclipse.tycho</groupId>
 				<artifactId>tycho-compiler-plugin</artifactId>
-				<version>${tychoVersion}</version>
+				<version>${tycho-version}</version>
 				<configuration>
 					<encoding>UTF-8</encoding>
 				</configuration>
@@ -122,7 +123,7 @@
 					is fixed -->
 				<groupId>org.eclipse.tycho</groupId>
 				<artifactId>tycho-source-plugin</artifactId>
-				<version>${tychoVersion}</version>
+				<version>${tycho-version}</version>
 				<executions>
 					<execution>
 						<id>attach-source</id>
@@ -171,7 +172,7 @@
 					<plugin>
 						<groupId>org.eclipse.tycho</groupId>
 						<artifactId>tycho-packaging-plugin</artifactId>
-						<version>${tychoVersion}</version>
+						<version>${tycho-version}</version>
 						<configuration>
 							<format>'v'yyyyMMdd-HHmm'-H${BUILD_NUMBER}-${BUILD_ALIAS}'</format>
 							<archiveSite>true</archiveSite>
@@ -211,7 +212,7 @@
 					<plugin>
 						<groupId>org.eclipse.tycho</groupId>
 						<artifactId>tycho-surefire-plugin</artifactId>
-						<version>${tychoVersion}</version>
+						<version>${tycho-version}</version>
 						<configuration>
 							<systemProperties combine.children="append">
 								<emma.session.out.file>${emma.session.out.file}
@@ -402,7 +403,7 @@
 			
 			<repositories>
 				<repository>
-					<id>kepler-repository</id>
+					<id>luna-repository</id>
 					<layout>p2</layout>
 					<url>http://download.eclipse.org/releases/staging/</url>
 				</repository>
@@ -413,7 +414,7 @@
 	<repositories>
 		<repository>
 			<id>jbosstools-requirements-composite-mirror</id>
-			<url>http://download.jboss.org/jbosstools/updates/stable/helios/</url>
+			<url>http://download.jboss.org/jbosstools/updates/stable/kepler/</url>
 			<layout>p2</layout>
 			<snapshots>
 				<enabled>true</enabled>

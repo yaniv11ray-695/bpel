@@ -98,6 +98,35 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xs
 				<module>org.eclipse.bpel.xpath10</module>
 			</modules>
 		</profile>
+
+		
+		<!-- Luna -->
+		<profile>
+			<id>platform-luna</id>
+			<activation>
+				<property>
+					<name>platform.name</name>
+					<value>luna</value>
+				</property>
+			</activation>
+			
+			<modules>
+				<module>org.eclipse.bpel.help</module>
+				<module>org.eclipse.bpel.apache.ode.deploy.model</module>
+				<module>org.eclipse.bpel.apache.ode.deploy.ui</module>
+				<module>org.eclipse.bpel.apache.ode.runtime</module>
+				<module>org.eclipse.bpel.cheatsheet</module>
+				<module>org.eclipse.bpel.common.model</module>
+				<module>org.eclipse.bpel.common.ui.noEmbeddedEditors</module>
+				<module>org.eclipse.bpel.common.wsdl</module>
+				<module>org.eclipse.bpel.model</module>
+				<module>org.eclipse.bpel.runtimes</module>
+				<module>org.eclipse.bpel.ui.noEmbeddedEditors</module>
+				<module>org.eclipse.bpel.validator</module>
+				<module>org.eclipse.bpel.wsil.model</module>
+				<module>org.eclipse.bpel.xpath10</module>
+			</modules>
+		</profile>
 	</profiles>
 </project>
 	

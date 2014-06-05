@@ -31,11 +31,6 @@
 				</property>
 			</activation>
 			
-			<properties>
-				<tycho-version>0.16.0</tycho-version>
-				<tycho-extras-version>${tycho-version}</tycho-extras-version>
-			</properties>
-			
 			<build>
 				<plugins>
 				
