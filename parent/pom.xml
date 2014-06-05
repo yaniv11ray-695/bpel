@@ -389,6 +389,25 @@
 				</repository>
 			</repositories>
 		</profile>
+		
+		<!-- Luna -->
+		<profile>
+			<id>platform-luna</id>
+			<activation>
+				<property>
+					<name>platform.name</name>
+					<value>luna</value>
+				</property>
+			</activation>
+			
+			<repositories>
+				<repository>
+					<id>kepler-repository</id>
+					<layout>p2</layout>
+					<url>http://download.eclipse.org/releases/staging/</url>
+				</repository>
+			</repositories>
+		</profile>
 	</profiles>
 
 	<repositories>
