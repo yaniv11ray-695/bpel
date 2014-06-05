@@ -2,7 +2,7 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: %pluginName
 Bundle-SymbolicName: org.eclipse.bpel.apache.ode.runtime;singleton:=true
-Bundle-Version: 1.0.3.qualifier
+Bundle-Version: 1.0.4.qualifier
 Bundle-Vendor: %providerName
 Bundle-Localization: plugin
 Require-Bundle: org.eclipse.ui;bundle-version="[3.4.0,4.0.0)",
@@ -11,13 +11,13 @@ Require-Bundle: org.eclipse.ui;bundle-version="[3.4.0,4.0.0)",
  org.eclipse.emf.ecore,
  org.eclipse.jst.server.generic.core;bundle-version="[1.0.305,2.0.0)",
  org.eclipse.wst.wsdl;bundle-version="[1.1.200,2.0.0)",
- org.eclipse.bpel.model;bundle-version="1.0.3",
+ org.eclipse.bpel.model;bundle-version="1.0.4",
  org.eclipse.jem.util;bundle-version="[2.0.100,3.0.0)",
  org.eclipse.core.runtime;bundle-version="[3.4.0,4.0.0)",
- org.eclipse.bpel.runtimes;bundle-version="1.0.3",
+ org.eclipse.bpel.runtimes;bundle-version="1.0.4",
  org.eclipse.jst.server.generic.ui;bundle-version="[1.0.305,2.0.0)",
  org.eclipse.emf.ecore.xmi,
- org.eclipse.bpel.ui;bundle-version="1.0.3",
+ org.eclipse.bpel.ui;bundle-version="1.0.4",
  org.apache.xerces;bundle-version="[2.9.0,3.0.0)",
  org.eclipse.xsd,
  org.eclipse.jst.server.ui;bundle-version="[1.0.303,2.0.0)",
