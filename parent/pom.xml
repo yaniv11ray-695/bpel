@@ -427,6 +427,31 @@
 				<enabled>true</enabled>
 			</releases>
 		</repository>
+
+		<repository>
+			<id>eclipse-emf</id>
+			<url>http://download.eclipse.org/modeling/emf/updates/releases/</url>
+			<layout>p2</layout>
+			<snapshots>
+				<enabled>true</enabled>
+			</snapshots>
+			<releases>
+				<enabled>true</enabled>
+			</releases>
+		</repository>
+
+		<repository>
+			<id>eclipse-gef</id>
+			<url>http://download.eclipse.org/tools/gef/updates/releases/</url>
+			<layout>p2</layout>
+			<snapshots>
+				<enabled>true</enabled>
+			</snapshots>
+			<releases>
+				<enabled>true</enabled>
+			</releases>
+		</repository>
+
 	</repositories>
 
 	<pluginRepositories>
