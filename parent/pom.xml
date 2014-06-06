@@ -405,7 +405,7 @@
 				<repository>
 					<id>luna-repository</id>
 					<layout>p2</layout>
-					<url>http://download.eclipse.org/releases/staging/</url>
+					<url>http://download.eclipse.org/releases/luna/</url>
 				</repository>
 			</repositories>
 		</profile>
