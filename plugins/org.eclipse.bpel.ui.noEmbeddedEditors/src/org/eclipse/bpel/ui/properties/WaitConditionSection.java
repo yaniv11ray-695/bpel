@@ -92,7 +92,16 @@ public class WaitConditionSection extends ExpressionSection {
 			this.radioButtons[i] = this.fWidgetFactory.createButton(radioComposite, gLabels[i], SWT.RADIO);
 			this.radioButtons[i].addSelectionListener(new SelectionListener() {
 				public void widgetSelected (SelectionEvent e) {
-					// TODO: store the information
+					Button button = (Button)e.getSource();
+					if (button.getSelection()) {
+						for (int i = 0; i<radioButtons.length; i++) {
+							if (radioButtons[i]==button) {
+								fCurrentButtonIndex = i;
+								saveExpressionToModel();
+								break;
+							}
+						}
+					}
 				}
 				public void widgetDefaultSelected(SelectionEvent e) { }
 			});
