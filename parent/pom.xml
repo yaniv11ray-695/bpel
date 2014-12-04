@@ -10,9 +10,8 @@
 	</modules>
 
 	<properties>
-		<tycho-version>0.16.0</tycho-version>
+		<tycho-version>0.21.0</tycho-version>
 		<tycho-extras-version>${tycho-version}</tycho-extras-version>
-		<BUILD_ALIAS>CI</BUILD_ALIAS>
 		<memoryOptions1>-Xms512m -Xmx1024m -XX:PermSize=256m</memoryOptions1>
 		<memoryOptions2>-XX:MaxPermSize=256m</memoryOptions2>
 		<systemProperties></systemProperties>
@@ -32,7 +31,7 @@
 				<artifactId>tycho-packaging-plugin</artifactId>
 				<version>${tycho-version}</version>
 				<configuration>
-					<format>'v'yyyyMMdd-HHmm'-${BUILD_ALIAS}'</format>
+					<format>'v'yyyyMMddHHmm</format>
 					<archiveSite>true</archiveSite>
 				</configuration>
 			</plugin>
@@ -156,7 +155,6 @@
 				</configuration>
 			</plugin>
 
-<!-- 
 			<plugin>
 				<groupId>org.eclipse.tycho.extras</groupId>
 				<artifactId>tycho-pack200a-plugin</artifactId>
@@ -198,7 +196,7 @@
 					</execution>
 				</executions>
 			</plugin>
- -->
+
 			<plugin>
 				<groupId>org.eclipse.tycho</groupId>
 				<artifactId>tycho-source-plugin</artifactId>
@@ -299,12 +297,6 @@
 	
 	<profiles>
 		<profile>
-			<id>hudson</id>
-			<activation>
-				<property>
-					<name>BUILD_NUMBER</name>
-				</property>
-			</activation>
 			<build>
 				<plugins>
 					<plugin>
@@ -312,7 +304,7 @@
 						<artifactId>tycho-packaging-plugin</artifactId>
 						<version>${tycho-version}</version>
 						<configuration>
-							<format>'v'yyyyMMdd-HHmm'-H${BUILD_NUMBER}-${BUILD_ALIAS}'</format>
+							<format>'v'yyyyMMddHHmm</format>
 							<archiveSite>true</archiveSite>
 						</configuration>
 					</plugin>
