@@ -156,6 +156,7 @@
 				</configuration>
 			</plugin>
 
+<!-- 
 			<plugin>
 				<groupId>org.eclipse.tycho.extras</groupId>
 				<artifactId>tycho-pack200a-plugin</artifactId>
@@ -197,7 +198,7 @@
 					</execution>
 				</executions>
 			</plugin>
-
+ -->
 			<plugin>
 				<groupId>org.eclipse.tycho</groupId>
 				<artifactId>tycho-source-plugin</artifactId>
