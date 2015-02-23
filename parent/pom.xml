@@ -31,7 +31,7 @@
 				<artifactId>tycho-packaging-plugin</artifactId>
 				<version>${tycho-version}</version>
 				<configuration>
-					<format>Final</format>
+					<format>'Final'</format>
 					<archiveSite>true</archiveSite>
 				</configuration>
 			</plugin>
@@ -304,7 +304,7 @@
 						<artifactId>tycho-packaging-plugin</artifactId>
 						<version>${tycho-version}</version>
 						<configuration>
-							<format>Final</format>
+							<format>'Final'</format>
 							<archiveSite>true</archiveSite>
 						</configuration>
 					</plugin>
