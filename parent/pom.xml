@@ -3,7 +3,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>org.eclipse.bpel</groupId>
 	<artifactId>org.eclipse.bpel.parent.pom</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+	<version>1.0.4.Final</version>
 	<name>Eclipse BPEL Parent</name>
 	<packaging>pom</packaging>
 	<modules>
@@ -31,7 +31,7 @@
 				<artifactId>tycho-packaging-plugin</artifactId>
 				<version>${tycho-version}</version>
 				<configuration>
-					<format>'v'yyyyMMddHHmm</format>
+					<format>Final</format>
 					<archiveSite>true</archiveSite>
 				</configuration>
 			</plugin>
@@ -304,7 +304,7 @@
 						<artifactId>tycho-packaging-plugin</artifactId>
 						<version>${tycho-version}</version>
 						<configuration>
-							<format>'v'yyyyMMddHHmm</format>
+							<format>Final</format>
 							<archiveSite>true</archiveSite>
 						</configuration>
 					</plugin>

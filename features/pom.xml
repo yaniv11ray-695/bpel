@@ -3,14 +3,14 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xs
 	<parent>
 		<artifactId>org.eclipse.bpel.parent.pom</artifactId>
 		<groupId>org.eclipse.bpel</groupId>
-		<version>0.0.1-SNAPSHOT</version>
+		<version>1.0.4.Final</version>
 		<relativePath>../parent/pom.xml</relativePath>
 	</parent>
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>org.eclipse.bpel</groupId>
 	<artifactId>features</artifactId>
 	<name>bpel.features</name>
-	<version>0.0.1-SNAPSHOT</version>
+	<version>1.0.4.Final</version>
 	<packaging>pom</packaging>
 	<modules>
 		<module>org.eclipse.bpel.common.feature</module>

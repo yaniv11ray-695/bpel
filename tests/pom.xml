@@ -4,7 +4,7 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xs
 	<groupId>org.eclipse</groupId>
 	<artifactId>bpel</artifactId>
 	<name>bpel.test</name>
-	<version>0.0.1-SNAPSHOT</version>
+	<version>1.0.4.Final</version>
 	<packaging>pom</packaging>
 	<modules>
 		<module>org.eclipse.bpel.common.wsdl.tests</module>
