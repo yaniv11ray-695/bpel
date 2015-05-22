@@ -7,7 +7,7 @@
 	<parent>
 		<groupId>org.eclipse.bpel</groupId>
 		<artifactId>org.eclipse.bpel.parent.pom</artifactId>
-		<version>1.0.4.Final</version>
+		<version>1.0.5.Final</version>
 		<relativePath>../parent/pom.xml</relativePath>
 	</parent>
 	
