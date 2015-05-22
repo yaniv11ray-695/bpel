@@ -244,6 +244,9 @@ public abstract class AbstractStyledTextExpressionSection extends BPELPropertySe
 
 		if( this.modelUpdate.get())
 			return;
+		
+		if (getExpressionTarget()==null)
+			return;
 
 		CompoundCommand result = new CompoundCommand();
 		Expression exp = BPELFactory.eINSTANCE.createCondition();

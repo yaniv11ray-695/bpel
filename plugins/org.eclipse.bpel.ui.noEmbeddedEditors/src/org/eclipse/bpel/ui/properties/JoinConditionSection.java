@@ -11,6 +11,7 @@
 package org.eclipse.bpel.ui.properties;
 
 import org.eclipse.bpel.model.Activity;
+import org.eclipse.bpel.model.BPELFactory;
 import org.eclipse.bpel.model.BPELPackage;
 import org.eclipse.bpel.model.Targets;
 import org.eclipse.bpel.ui.expressions.IEditorConstants;
@@ -22,21 +23,6 @@ import org.eclipse.emf.ecore.EStructuralFeature;
  * Details section for the JoinCondition of an activity (a boolean expression).
  */
 public class JoinConditionSection extends ExpressionSection {
-
-	/*
-	 * (non-Javadoc)
-	 * @see org.eclipse.bpel.ui.properties.ExpressionSection
-	 * #addAllAdapters()
-	 */
-	@Override
-	protected void addAllAdapters() {
-		super.addAllAdapters();
-
-		Activity activity = getModel();
-		Targets targets = activity.getTargets();
-		if( targets != null )
-			this.fAdapters[0].addToObject( targets );
-	}
 
 	/*
 	 * (non-Javadoc)
@@ -57,6 +43,20 @@ public class JoinConditionSection extends ExpressionSection {
 	protected EObject getExpressionTarget() {
 		Activity activity = getModel();
 		return activity.getTargets();
+	}
+
+	@Override
+	protected void saveExpressionToModel() {
+
+		if( this.modelUpdate.get())
+			return;
+		
+		if (getExpressionTarget()==null) {
+			Targets targets = BPELFactory.eINSTANCE.createTargets();
+			Activity activity = getModel();
+			activity.setTargets(targets);
+		}
+		super.saveExpressionToModel();
 	}
 
 	/*
