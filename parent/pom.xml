@@ -632,6 +632,10 @@
 	</repositories>
 
 	<pluginRepositories>
+		<pluginRepository>
+			<id>repo.eclipse.org.cbi-releases</id>
+			<url>https://repo.eclipse.org/content/repositories/cbi-releases/</url>
+		</pluginRepository>
 	
 		<!-- VZ -->
 		<pluginRepository>
@@ -662,30 +666,5 @@
 			</releases>
 		</pluginRepository>
 
-		<pluginRepository>
-			<id>repo.eclipse.org.cbi-releases</id>
-			<url>https://repo.eclipse.org/content/repositories/cbi-releases/</url>
-		</pluginRepository>
 	</pluginRepositories>
-	
-	<servers>
-		<server>
-			<id>maven-central</id>
-			<configuration>
-				<timeout>10000</timeout>
-			</configuration>
-		</server>
-		<server>
-			<id>eclipse-nexus-central</id>
-			<configuration>
-				<timeout>10000</timeout>
-			</configuration>
-		</server>
-		<server>
-			<id>eclipse-nexus-public</id>
-			<configuration>
-				<timeout>10000</timeout>
-			</configuration>
-		</server>
-	</servers>
 </project>
