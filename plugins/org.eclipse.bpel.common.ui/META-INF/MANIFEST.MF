@@ -28,6 +28,6 @@ Export-Package: org.eclipse.bpel.common.ui,
  org.eclipse.bpel.common.ui.markers,
  org.eclipse.bpel.common.ui.palette,
  org.eclipse.bpel.common.ui.tray
-Bundle-RequiredExecutionEnvironment: JavaSE-1.6
+Bundle-RequiredExecutionEnvironment: JavaSE-1.7
 Bundle-Vendor: %providerName
 Bundle-ClassPath: .

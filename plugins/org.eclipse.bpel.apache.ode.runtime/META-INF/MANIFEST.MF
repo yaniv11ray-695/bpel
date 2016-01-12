@@ -27,5 +27,5 @@ Require-Bundle: org.eclipse.ui,
 Bundle-Activator: org.eclipse.bpel.apache.ode.runtime.OdePlugin
 Export-Package: org.eclipse.bpel.apache.ode.runtime
 Bundle-ActivationPolicy: lazy
-Bundle-RequiredExecutionEnvironment: JavaSE-1.6
+Bundle-RequiredExecutionEnvironment: JavaSE-1.7
 Import-Package: org.eclipse.bpel.runtimes

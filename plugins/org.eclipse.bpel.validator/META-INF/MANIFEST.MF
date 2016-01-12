@@ -19,7 +19,7 @@ Require-Bundle: org.eclipse.emf.ecore.xmi,
  javax.wsdl;bundle-version="[1.5.0,1.6.2]",
  org.eclipse.bpel.xpath10;bundle-version="1.0.5"
 Bundle-ActivationPolicy: lazy
-Bundle-RequiredExecutionEnvironment: JavaSE-1.6
+Bundle-RequiredExecutionEnvironment: JavaSE-1.7
 Bundle-ClassPath: .
 Export-Package: org.eclipse.bpel.validator,
  org.eclipse.bpel.validator.adapters,

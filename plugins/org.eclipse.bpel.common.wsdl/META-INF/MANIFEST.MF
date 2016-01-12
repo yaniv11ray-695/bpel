@@ -13,7 +13,7 @@ Require-Bundle: org.eclipse.ui,
  org.eclipse.wst.wsdl,
  org.eclipse.emf.ecore.xmi,
  javax.wsdl;bundle-version="[1.5.0,1.6.2]"
-Bundle-RequiredExecutionEnvironment: JavaSE-1.6
+Bundle-RequiredExecutionEnvironment: JavaSE-1.7
 Bundle-ActivationPolicy: lazy
 Bundle-Localization: plugin
 Export-Package: org.eclipse.bpel.common.wsdl.helpers,

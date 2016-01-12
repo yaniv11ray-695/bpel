@@ -32,6 +32,6 @@ Export-Package: org.eclipse.bpel.jboss.riftsaw.runtime,
  org.eclipse.bpel.jboss.riftsaw.runtime.facets,
  org.eclipse.bpel.jboss.riftsaw.runtime.ui.wizards
 Bundle-ActivationPolicy: lazy
-Bundle-RequiredExecutionEnvironment: JavaSE-1.6
+Bundle-RequiredExecutionEnvironment: JavaSE-1.7
 Import-Package: org.eclipse.bpel.runtimes,
  org.eclipse.bpel.runtimes.publishers

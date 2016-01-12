@@ -6,7 +6,7 @@ Bundle-Version: 1.0.5.Final
 Bundle-ClassPath: .
 Bundle-Vendor: %providerName
 Bundle-Localization: plugin
-Bundle-RequiredExecutionEnvironment: JavaSE-1.6
+Bundle-RequiredExecutionEnvironment: JavaSE-1.7
 Export-Package: org.eclipse.bpel.extensionsample.model,
  org.eclipse.bpel.extensionsample.model.impl,
  org.eclipse.bpel.extensionsample.model.util

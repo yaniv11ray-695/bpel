@@ -10,7 +10,6 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xs
 	<groupId>org.eclipse.bpel</groupId>
 	<artifactId>plugins</artifactId>
 	<name>bpel.plugins</name>
-	<version>1.0.5.Final</version>
 	<packaging>pom</packaging>
 
 	<profiles>		
@@ -99,7 +98,6 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xs
 			</modules>
 		</profile>
 
-		
 		<!-- Luna -->
 		<profile>
 			<id>platform-luna</id>
@@ -122,6 +120,34 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xs
 				<module>org.eclipse.bpel.model</module>
 				<module>org.eclipse.bpel.runtimes</module>
 				<module>org.eclipse.bpel.ui.noEmbeddedEditors</module>
+				<module>org.eclipse.bpel.validator</module>
+				<module>org.eclipse.bpel.wsil.model</module>
+				<module>org.eclipse.bpel.xpath10</module>
+			</modules>
+		</profile>
+		
+		<!-- Mars -->
+		<profile>
+			<id>platform-mars</id>
+			<activation>
+				<property>
+					<name>platform.name</name>
+					<value>mars</value>
+				</property>
+			</activation>
+			
+			<modules>
+				<module>org.eclipse.bpel.help</module>
+				<module>org.eclipse.bpel.apache.ode.deploy.model</module>
+				<module>org.eclipse.bpel.apache.ode.deploy.ui</module>
+				<module>org.eclipse.bpel.apache.ode.runtime</module>
+				<module>org.eclipse.bpel.cheatsheet</module>
+				<module>org.eclipse.bpel.common.model</module>
+				<module>org.eclipse.bpel.common.ui</module>
+				<module>org.eclipse.bpel.common.wsdl</module>
+				<module>org.eclipse.bpel.model</module>
+				<module>org.eclipse.bpel.runtimes</module>
+				<module>org.eclipse.bpel.ui</module>
 				<module>org.eclipse.bpel.validator</module>
 				<module>org.eclipse.bpel.wsil.model</module>
 				<module>org.eclipse.bpel.xpath10</module>

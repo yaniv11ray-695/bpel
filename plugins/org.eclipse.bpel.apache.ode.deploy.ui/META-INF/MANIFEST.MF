@@ -26,4 +26,4 @@ Require-Bundle: org.eclipse.ui,
  org.eclipse.jem.util
 Bundle-ActivationPolicy: lazy
 Bundle-Vendor: %providerName
-Bundle-RequiredExecutionEnvironment: JavaSE-1.6
+Bundle-RequiredExecutionEnvironment: JavaSE-1.7

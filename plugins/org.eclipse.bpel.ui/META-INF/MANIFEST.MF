@@ -72,5 +72,5 @@ Export-Package: org.eclipse.bpel.ui,
  org.eclipse.bpel.ui.util.filedialog,
  org.eclipse.bpel.ui.util.marker,
  org.eclipse.bpel.ui.wizards
-Bundle-RequiredExecutionEnvironment: JavaSE-1.6
+Bundle-RequiredExecutionEnvironment: JavaSE-1.7
 Import-Package: org.eclipse.bpel.validator
