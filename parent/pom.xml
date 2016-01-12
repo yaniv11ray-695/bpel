@@ -3,8 +3,8 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>org.eclipse.bpel</groupId>
 	<artifactId>org.eclipse.bpel.parent.pom</artifactId>
-	<version>1.0.5.Final</version>
 	<name>Eclipse BPEL Parent</name>
+	<version>1.0.5-SNAPSHOT</version>
 	<packaging>pom</packaging>
 
 	<properties>
@@ -49,12 +49,43 @@
 				<configuration>
 					<resolver>p2</resolver>
 					<ignoreTychoRepositories>true</ignoreTychoRepositories>
-					<!-- NOT NEEDED? <environments> <environment> <os>macosx</os> <ws>cocoa</ws> <arch>x86</arch> 
-						</environment> <environment> <os>macosx</os> <ws>carbon</ws> <arch>x86</arch> 
-						</environment> <environment> <os>win32</os> <ws>win32</ws> <arch>x86</arch> 
-						</environment> <environment> <os>linux</os> <ws>gtk</ws> <arch>x86</arch> 
-						</environment> <environment> <os>linux</os> <ws>gtk</ws> <arch>x86_64</arch> 
-						</environment> </environments> -->
+					<includePackedArtifacts>true</includePackedArtifacts>
+					<environments>
+						<environment>
+							<os>macosx</os>
+							<ws>cocoa</ws>
+							<arch>x86_64</arch>
+						</environment>
+						<environment>
+							<os>win32</os>
+							<ws>win32</ws>
+							<arch>x86</arch>
+						</environment>
+						<environment>
+							<os>win32</os>
+							<ws>win32</ws>
+							<arch>x86_64</arch>
+						</environment>
+						<environment>
+							<os>linux</os>
+							<ws>gtk</ws>
+							<arch>x86</arch>
+						</environment>
+						<environment>
+							<os>linux</os>
+							<ws>gtk</ws>
+							<arch>x86_64</arch>
+						</environment>
+					</environments>
+					<dependency-resolution>
+						<extraRequirements>
+							<requirement>
+								<type>p2-installable-unit</type>
+								<id>org.eclipse.sdk.ide</id>
+								<versionRange>0.0.0</versionRange>
+							</requirement>
+						</extraRequirements>
+					</dependency-resolution>
 				</configuration>
 			</plugin>
 
@@ -69,6 +100,7 @@
 					<!-- timeout in seconds -->
 					<surefire.timeout>1800</surefire.timeout>
 					<forkedProcessTimeoutInSeconds>1800</forkedProcessTimeoutInSeconds>
+					<parallel>both</parallel>
 					<useUIHarness>true</useUIHarness>
 					<useUIThread>true</useUIThread>
 					<argLine>${memoryOptions1} ${memoryOptions2} ${systemProperties}
@@ -79,13 +111,8 @@
 					<product>org.eclipse.sdk.ide</product>
 					<application>org.eclipse.ui.ide.workbench</application>
 					<dependencies>
-						<dependency>
-							<type>p2-installable-unit</type>
-							<artifactId>org.eclipse.sdk.ide</artifactId>
-							<version>0.0.0</version>
-						</dependency>
-						<!-- http://www.jmock.org/maven.html -->
-						<dependency>
+						<!-- no tests actually depend on JMock so why is this included? http://www.jmock.org/maven.html -->
+						<!-- <dependency>
 							<groupId>org.jmock</groupId>
 							<artifactId>jmock-legacy</artifactId>
 							<version>2.5.1</version>
@@ -94,7 +121,7 @@
 							<groupId>org.jmock</groupId>
 							<artifactId>jmock-junit4</artifactId>
 							<version>2.5.1</version>
-						</dependency>
+						</dependency> -->
 					</dependencies>
 					<includes>
 						<include>**/AllTests.class</include>
@@ -102,7 +129,6 @@
 						<include>**/*AllBotTests*.class</include>
 						<include>**/*TestSuite*.class</include>
 					</includes>
-					<parallel>true</parallel>
 				</configuration>
 			</plugin>
 
@@ -139,23 +165,6 @@
 
 			<plugin>
 				<groupId>org.eclipse.tycho</groupId>
-				<artifactId>tycho-maven-plugin</artifactId>
-				<version>${tycho-version}</version>
-				<extensions>true</extensions>
-			</plugin>
-
-			<plugin>
-				<groupId>org.eclipse.tycho</groupId>
-				<artifactId>target-platform-configuration</artifactId>
-				<version>${tycho-version}</version>
-				<configuration>
-					<resolver>p2</resolver>
-					<includePackedArtifacts>true</includePackedArtifacts>
-				</configuration>
-			</plugin>
-
-			<plugin>
-				<groupId>org.eclipse.tycho</groupId>
 				<artifactId>tycho-source-plugin</artifactId>
 				<executions>
 					<execution>
@@ -172,7 +181,7 @@
 			<plugins>
 				<plugin>
 					<groupId>org.eclipse.tycho</groupId>
-					<artifactId>maven-osgi-compiler-plugin</artifactId>
+					<artifactId>tycho-compiler-plugin</artifactId>
 					<version>${tycho-version}</version>
 					<configuration>
 						<encoding>UTF-8</encoding>
@@ -426,6 +435,22 @@
 		</profile>
 	</profiles>
 
+	<dependencies>
+		<!-- no tests actually depend on JMock so why is this included? http://www.jmock.org/maven.html -->
+		<dependency>
+			<groupId>org.jmock</groupId>
+			<artifactId>jmock-legacy</artifactId>
+			<version>2.5.1</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.jmock</groupId>
+			<artifactId>jmock-junit4</artifactId>
+			<version>2.5.1</version>
+			<scope>test</scope>
+		</dependency>
+	</dependencies>
+
 	<repositories>
 		<repository>
 			<id>jbosstools-requirements-composite-mirror</id>
@@ -453,7 +478,8 @@
 		</repository>
 		<repository>
 			<id>orbit-for-junit</id>
-			<url>http://download.eclipse.org/tools/orbit/downloads/drops/R20110523182458/repository/</url>
+			<!-- use old URL (contains JUnit 3.8.2, 4.7.0, 4.8.1, 4.8.2) because tests depend on old JUnit -->
+			<url>http://download.eclipse.org/tools/orbit/downloads/drops/R20110523182458/repository/</url> 
 			<layout>p2</layout>
 			<snapshots>
 				<enabled>true</enabled>
@@ -512,7 +538,29 @@
 			<url>http://maven.eclipse.org/nexus/content/groups/public/</url>
 		</pluginRepository>
 		<!-- VZ -->
-	
+
+		<!--help to find maven plugins when eclipse.org is unresponsive -->
+		<pluginRepository>
+			<id>sonatype-public-repository</id>
+			<url>https://oss.sonatype.org/content/groups/public</url>
+		</pluginRepository>
+ 		<pluginRepository>
+			<id>jboss-releases</id>
+			<name>JBoss Releases Maven Repository</name>
+			<url>https://repository.jboss.org/nexus/content/repositories/releases/</url>
+			<releases>
+				<enabled>true</enabled>
+			</releases>
+		</pluginRepository>
+		<pluginRepository>
+			<id>jboss-snapshots-repository</id>
+			<name>JBoss Snapshots Repository</name>
+			<url>https://repository.jboss.org/nexus/content/repositories/snapshots/</url>
+			<snapshots>
+				<enabled>true</enabled>
+			</snapshots>
+		</pluginRepository>
+
 		<pluginRepository>
 			<id>apache-snapshots</id>
 			<url>http://repository.apache.org/snapshots/</url>
