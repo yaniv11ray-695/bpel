@@ -2,9 +2,9 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: %pluginName
 Bundle-SymbolicName: org.eclipse.bpel.xpath10.junit
-Bundle-Version: 1.0.5.Final
-Fragment-Host: org.eclipse.bpel.xpath10;bundle-version="1.0.5"
-Bundle-RequiredExecutionEnvironment: JavaSE-1.6
+Bundle-Version: 1.0.6.qualifier
+Fragment-Host: org.eclipse.bpel.xpath10;bundle-version="1.0.6"
+Bundle-RequiredExecutionEnvironment: JavaSE-1.8
 Require-Bundle: org.junit;bundle-version="4.8.1"
 Export-Package: org.eclipse.bpel.xpath10.parser
 Bundle-Localization: plugin
