@@ -13,7 +13,7 @@
 		<memoryOptions1>-Xms512m -Xmx1024m -XX:PermSize=256m</memoryOptions1>
 		<memoryOptions2>-XX:MaxPermSize=256m</memoryOptions2>
 		<systemProperties></systemProperties>
-		<platform.name>mars</platform.name>
+		<platform.name>neon</platform.name>
 		<BUILD_ALIAS>Final</BUILD_ALIAS>
 	</properties>
 
@@ -380,6 +380,25 @@
 					<id>mars-repository</id>
 					<layout>p2</layout>
 					<url>http://download.eclipse.org/releases/mars/</url>
+				</repository>
+			</repositories>
+		</profile>
+
+		<!-- Neon -->
+		<profile>
+			<id>platform-neon</id>
+			<activation>
+				<property>
+					<name>platform.name</name>
+					<value>neon</value>
+				</property>
+			</activation>
+			
+			<repositories>
+				<repository>
+					<id>neon-repository</id>
+					<layout>p2</layout>
+					<url>http://download.eclipse.org/releases/neon/</url>
 				</repository>
 			</repositories>
 		</profile>
