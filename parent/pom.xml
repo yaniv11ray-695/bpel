@@ -4,16 +4,16 @@
 	<groupId>org.eclipse.bpel</groupId>
 	<artifactId>org.eclipse.bpel.parent.pom</artifactId>
 	<name>Eclipse BPEL Parent</name>
-	<version>1.1.0-SNAPSHOT</version>
+	<version>1.1.1-SNAPSHOT</version>
 	<packaging>pom</packaging>
 
 	<properties>
-		<tycho-version>0.24.0</tycho-version>
+		<tycho-version>0.26.0</tycho-version>
 		<tycho-extras-version>${tycho-version}</tycho-extras-version>
 		<memoryOptions1>-Xms512m -Xmx1024m -XX:PermSize=256m</memoryOptions1>
 		<memoryOptions2>-XX:MaxPermSize=256m</memoryOptions2>
 		<systemProperties></systemProperties>
-		<platform.name>neon</platform.name>
+		<platform.name>oxygen</platform.name>
 		<BUILD_ALIAS>Final</BUILD_ALIAS>
 	</properties>
 
@@ -288,7 +288,7 @@
 				</repository>
 			</repositories>
 		</profile>
-		
+
 		<!-- Indigo -->
 		<profile>
 			<id>platform-indigo</id>
@@ -399,6 +399,24 @@
 					<id>neon-repository</id>
 					<layout>p2</layout>
 					<url>http://download.eclipse.org/releases/neon/</url>
+				</repository>
+			</repositories>
+		</profile>
+
+		<profile>
+			<id>platform-oxygen</id>
+			<activation>
+				<property>
+					<name>platform.name</name>
+					<value>oxygen</value>
+				</property>
+			</activation>
+			
+			<repositories>
+				<repository>
+					<id>oxygen-repository</id>
+					<layout>p2</layout>
+					<url>http://download.eclipse.org/releases/oxygen/</url>
 				</repository>
 			</repositories>
 		</profile>
