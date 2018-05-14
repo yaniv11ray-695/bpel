@@ -37,7 +37,7 @@ then
 else
   TARGET_VERSION="${CMD_2}"
   MVN_TARGET_VERSION=$CMD_2
-  OSGI_TARGET_VERSION=$TARGET_VERSION
+  OSGI_TARGET_VERSION="${TARGET_VERSION}.qualifier"
 fi
 
 echo "Using the following settings:"

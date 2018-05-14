@@ -4,16 +4,16 @@
 	<groupId>org.eclipse.bpel</groupId>
 	<artifactId>org.eclipse.bpel.parent.pom</artifactId>
 	<name>Eclipse BPEL Parent</name>
-	<version>1.1.1-SNAPSHOT</version>
+	<version>1.1.2-SNAPSHOT</version>
 	<packaging>pom</packaging>
 
 	<properties>
-		<tycho-version>0.26.0</tycho-version>
+		<tycho-version>1.1.0</tycho-version>
 		<tycho-extras-version>${tycho-version}</tycho-extras-version>
 		<memoryOptions1>-Xms512m -Xmx1024m -XX:PermSize=256m</memoryOptions1>
 		<memoryOptions2>-XX:MaxPermSize=256m</memoryOptions2>
 		<systemProperties></systemProperties>
-		<platform.name>oxygen</platform.name>
+		<platform.name>photon</platform.name>
 		<BUILD_ALIAS>Final</BUILD_ALIAS>
 	</properties>
 
@@ -417,6 +417,24 @@
 					<id>oxygen-repository</id>
 					<layout>p2</layout>
 					<url>http://download.eclipse.org/releases/oxygen/</url>
+				</repository>
+			</repositories>
+		</profile>
+
+		<profile>
+			<id>platform-photon</id>
+			<activation>
+				<property>
+					<name>platform.name</name>
+					<value>photon</value>
+				</property>
+			</activation>
+			
+			<repositories>
+				<repository>
+					<id>photon-repository</id>
+					<layout>p2</layout>
+					<url>http://download.eclipse.org/releases/photon/</url>
 				</repository>
 			</repositories>
 		</profile>
