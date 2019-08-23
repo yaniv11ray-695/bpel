@@ -4,7 +4,7 @@
 	<groupId>org.eclipse.bpel</groupId>
 	<artifactId>org.eclipse.bpel.parent.pom</artifactId>
 	<name>Eclipse BPEL Parent</name>
-	<version>1.1.2-SNAPSHOT</version>
+	<version>1.1.3-SNAPSHOT</version>
 	<packaging>pom</packaging>
 
 	<properties>
@@ -13,7 +13,7 @@
 		<memoryOptions1>-Xms512m -Xmx1024m -XX:PermSize=256m</memoryOptions1>
 		<memoryOptions2>-XX:MaxPermSize=256m</memoryOptions2>
 		<systemProperties></systemProperties>
-		<platform.name>photon</platform.name>
+		<platform.name>2019-09</platform.name>
 		<BUILD_ALIAS>Final</BUILD_ALIAS>
 	</properties>
 
@@ -440,6 +440,24 @@
 		</profile>
 
 		<profile>
+			<id>platform-2019-09</id>
+			<activation>
+				<property>
+					<name>platform.name</name>
+					<value>2019-09</value>
+				</property>
+			</activation>
+
+			<repositories>
+				<repository>
+					<id>2019-09-repository</id>
+					<layout>p2</layout>
+					<url>http://download.eclipse.org/releases/2019-09/</url>
+				</repository>
+			</repositories>
+		</profile>
+
+		<profile>
 			<id>sign</id>
 			<build>
 				<plugins>
@@ -509,7 +527,7 @@
 	<repositories>
 		<repository>
 			<id>jbosstools-requirements-composite-mirror</id>
-			<url>http://download.jboss.org/jbosstools/updates/stable/kepler/</url>
+			<url>https://download.jboss.org/jbosstools/photon/stable/updates/</url>
 			<layout>p2</layout>
 			<snapshots>
 				<enabled>true</enabled>
