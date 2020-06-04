@@ -24,3 +24,8 @@ target/
 *.java._trace
 *.java_trace
 *.smap
+
+# Eclipse Project settings
+.settings
+.project
+.classpath
