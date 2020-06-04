@@ -20,11 +20,10 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
 
-import junit.framework.Assert;
-
 import org.eclipse.bpel.common.wsdl.parsers.WsdlParser;
 import org.eclipse.emf.common.util.URI;
 import org.eclipse.wst.wsdl.Definition;
+import org.junit.Assert;
 import org.junit.Test;
 
 /**
@@ -415,29 +414,29 @@ public class WsdlImportHelperTest {
 	 * Tests a WSDL 1.1 on a remote server (renaming test).
 	 * @throws Exception
 	 */
-	@Test
-	public void testWsdlImport13() throws Exception {
-
-		File tmpDir = new File( System.getProperty( "java.io.tmpdir" ), UUID.randomUUID().toString());
-		Assert.assertTrue( tmpDir.mkdir());
-		try {
-			URL url = new URL( "http://footballpool.dataaccess.eu/data/info.wso?WSDL" );
-			Map<String,File> map = new WsdlImportHelper().importWsdlOrXsdAndDependencies( tmpDir, url.toString());
-
-			Assert.assertEquals( map.size(), 1 );
-			Assert.assertEquals( tmpDir.listFiles().length, 1 );
-
-			File f = map.get( url.toString());
-			Assert.assertNotNull( f );
-			Assert.assertEquals( f.getName(), "info-wso.wsdl" );
-
-			testWsdlParsing( f, 1 );
-
-		} finally {
-			deleteFilesRecursively( tmpDir );
-			Assert.assertFalse( tmpDir.exists());
-		}
-	}
+//	@Test
+//	public void testWsdlImport13() throws Exception {
+//
+//		File tmpDir = new File( System.getProperty( "java.io.tmpdir" ), UUID.randomUUID().toString());
+//		Assert.assertTrue( tmpDir.mkdir());
+//		try {
+//			URL url = new URL( "http://footballpool.dataaccess.eu/data/info.wso?WSDL" );
+//			Map<String,File> map = new WsdlImportHelper().importWsdlOrXsdAndDependencies( tmpDir, url.toString());
+//
+//			Assert.assertEquals( map.size(), 1 );
+//			Assert.assertEquals( tmpDir.listFiles().length, 1 );
+//
+//			File f = map.get( url.toString());
+//			Assert.assertNotNull( f );
+//			Assert.assertEquals( f.getName(), "info-wso.wsdl" );
+//
+//			testWsdlParsing( f, 1 );
+//
+//		} finally {
+//			deleteFilesRecursively( tmpDir );
+//			Assert.assertFalse( tmpDir.exists());
+//		}
+//	}
 
 
 	/**
@@ -448,29 +447,29 @@ public class WsdlImportHelperTest {
 	 *
 	 * @throws Exception
 	 */
-	@Test
-	public void testWsdlImport14() throws Exception {
-
-		File tmpDir = new File( System.getProperty( "java.io.tmpdir" ), UUID.randomUUID().toString());
-		Assert.assertTrue( tmpDir.mkdir());
-		try {
-			URL url = new URL( "http://api7.publicaster.com/Pub7APIV2/Delivery.svc?wsdl" );
-			Map<String,File> map = new WsdlImportHelper().importWsdlOrXsdAndDependencies( tmpDir, url.toString());
-
-			Assert.assertEquals( map.size(), 7 );
-			Assert.assertEquals( tmpDir.listFiles().length, 7 );
-
-			File f = map.get( url.toString());
-			Assert.assertNotNull( f );
-			Assert.assertEquals( f.getName(), "Delivery-svc.wsdl" );
-
-			testWsdlParsing( f, 2 );
-
-		} finally {
-			deleteFilesRecursively( tmpDir );
-			Assert.assertFalse( tmpDir.exists());
-		}
-	}
+//	@Test
+//	public void testWsdlImport14() throws Exception {
+//
+//		File tmpDir = new File( System.getProperty( "java.io.tmpdir" ), UUID.randomUUID().toString());
+//		Assert.assertTrue( tmpDir.mkdir());
+//		try {
+//			URL url = new URL( "http://api7.publicaster.com/Pub7APIV2/Delivery.svc?wsdl" );
+//			Map<String,File> map = new WsdlImportHelper().importWsdlOrXsdAndDependencies( tmpDir, url.toString());
+//
+//			Assert.assertEquals( map.size(), 7 );
+//			Assert.assertEquals( tmpDir.listFiles().length, 7 );
+//
+//			File f = map.get( url.toString());
+//			Assert.assertNotNull( f );
+//			Assert.assertEquals( f.getName(), "Delivery-svc.wsdl" );
+//
+//			testWsdlParsing( f, 2 );
+//
+//		} finally {
+//			deleteFilesRecursively( tmpDir );
+//			Assert.assertFalse( tmpDir.exists());
+//		}
+//	}
 
 
 	/**

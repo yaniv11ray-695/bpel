@@ -14,10 +14,9 @@ package org.eclipse.bpel.common.wsdl.parsers;
 import java.net.URL;
 import java.util.Collection;
 
-import junit.framework.Assert;
-
 import org.eclipse.emf.common.util.URI;
 import org.eclipse.wst.wsdl.Definition;
+import org.junit.Assert;
 import org.junit.Test;
 
 /**

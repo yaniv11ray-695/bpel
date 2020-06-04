@@ -11,24 +11,4 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xs
 	<artifactId>org.eclipse.bpel.common.wsdl.tests</artifactId> 
 	<packaging>eclipse-test-plugin</packaging>
 	
-	<build>
-		<plugins>
-			<plugin>
-				<!-- maven-osgi-*-plugin became tycho-*-plugin in Tycho 0.12 -->
-				<groupId>org.eclipse.tycho</groupId>
-				<artifactId>tycho-surefire-plugin</artifactId>
-				<version>${tycho-version}</version>
-				<configuration>
-					<includes>
-						<include>**/*Test.class</include>
-					</includes>
-					
-					<argLine>-Xms64m -Xmx1024m -XX:MaxPermSize=128M -Dorg.eclipse.swtbot.search.timeout=5000</argLine>
-					<useUIHarness>true</useUIHarness>
-					
-					<!-- Dependencies are set through the manifest -->
-				</configuration>
-			</plugin>
-		</plugins>
-	</build>
 </project>

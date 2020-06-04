@@ -6,7 +6,6 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xs
 		<artifactId>org.eclipse.bpel.root</artifactId>
 		<version>1.1.3-SNAPSHOT</version>
 	</parent>
-	<groupId>org.eclipse.bpel</groupId>
 	<artifactId>org.eclipse.bpel.tests</artifactId>
 	<packaging>pom</packaging>
 	<modules>

@@ -8,7 +8,7 @@
 	<packaging>pom</packaging>
 
 	<properties>
-		<tycho-version>1.1.0</tycho-version>
+		<tycho-version>1.6.0</tycho-version>
 		<tycho-extras-version>${tycho-version}</tycho-extras-version>
 		<memoryOptions1>-Xms512m -Xmx1024m -XX:PermSize=256m</memoryOptions1>
 		<memoryOptions2>-XX:MaxPermSize=256m</memoryOptions2>
@@ -100,9 +100,15 @@
 					<!-- timeout in seconds -->
 					<surefire.timeout>1800</surefire.timeout>
 					<forkedProcessTimeoutInSeconds>1800</forkedProcessTimeoutInSeconds>
+					
+					<!-- fix Parallel mode with perCoreThreadCount=true requiures threadCount>=1 
 					<parallel>both</parallel>
 					<useUIHarness>true</useUIHarness>
 					<useUIThread>true</useUIThread>
+					-->
+					
+					<failIfNoTests>false</failIfNoTests>
+					
 					<argLine>${memoryOptions1} ${memoryOptions2} ${systemProperties}
 					</argLine>
 					<!-- https://docs.sonatype.org/display/TYCHO/How+to+run+SWTBot+tests+with+Tycho -->
@@ -403,6 +409,7 @@
 			</repositories>
 		</profile>
 
+		<!-- Oxygen -->
 		<profile>
 			<id>platform-oxygen</id>
 			<activation>
@@ -421,6 +428,7 @@
 			</repositories>
 		</profile>
 
+		<!-- Photon -->
 		<profile>
 			<id>platform-photon</id>
 			<activation>
@@ -439,6 +447,7 @@
 			</repositories>
 		</profile>
 
+		<!-- 2019-09 -->
 		<profile>
 			<id>platform-2019-09</id>
 			<activation>
