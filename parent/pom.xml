@@ -466,6 +466,24 @@
 			</repositories>
 		</profile>
 
+		<!-- 2020-06 -->
+	 	<profile>
+			<id>platform-2020-06</id>
+			<activation>
+				<property>
+					<name>platform-version-name</name>
+					<value>2020-06</value>
+				</property>
+			</activation>
+			<repositories>
+				<repository>
+					<id>2020-06-repository</id>
+					<layout>p2</layout>
+					<url>http://download.eclipse.org/releases/2020-06/</url>
+				</repository>
+			</repositories>
+		</profile>
+		
 		<profile>
 			<id>sign</id>
 			<build>
