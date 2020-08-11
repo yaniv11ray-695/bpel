@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>org.eclipse.bpel</groupId>
 	<artifactId>org.eclipse.bpel.parent.pom</artifactId>
@@ -32,7 +33,6 @@
 
 			<plugin>
 				<artifactId>maven-antrun-plugin</artifactId>
-				<version>1.4</version>
 			</plugin>
 
 			<plugin>
@@ -482,6 +482,23 @@
 					<url>http://download.eclipse.org/releases/2020-06/</url>
 				</repository>
 			</repositories>
+		</profile>
+
+		<!-- 2020-09 -->
+	 	<profile>
+			<id>platform-2020-09</id>
+			<activation>
+				<property>
+					<name>platform-version-name</name>
+					<value>2020-09</value>
+				</property>
+			</activation>
+			<properties>
+				<eclipse-site>http://download.eclipse.org/releases/2020-09</eclipse-site>
+				<platform-version>[4.8,5.2)</platform-version>
+				<platform-version-name>2020-09</platform-version-name>
+				<eclipse.orbit.url>https://download.eclipse.org/tools/orbit/S-builds/S20200727174946/repository</eclipse.orbit.url>
+			</properties>
 		</profile>
 		
 		<profile>
