@@ -629,6 +629,13 @@
 				<enabled>true</enabled>
 			</releases>
 		</repository>
+		
+		<!-- license repo -->
+		<repository>
+			<id>eclipse-license</id>
+			<layout>p2</layout>
+			<url>https://download.eclipse.org/cbi/updates/license/</url>
+		</repository>		
 
 	</repositories>
 
